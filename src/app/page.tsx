@@ -274,7 +274,9 @@ export default function Home() {
             </p>
           </div>
           
-          <PhoneMockup />
+          <div className="flex justify-center">
+            <PhoneMockup />
+          </div>
         </div>
       </section>
 
