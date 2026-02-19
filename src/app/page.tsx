@@ -1,454 +1,293 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 
-// SVG Illustrations
-const BirthdayCakeIllustration = () => (
-  <svg width="200" height="200" viewBox="0 0 200 200" className="animate-float">
-    {/* Cake Base */}
-    <ellipse cx="100" cy="180" rx="80" ry="12" fill="#f3e8d3" />
-    <rect x="20" y="120" width="160" height="60" rx="8" fill="#ff6b4a" />
-    <rect x="30" y="110" width="140" height="20" rx="4" fill="#FFD93D" />
-    <rect x="40" y="90" width="120" height="30" rx="6" fill="#ff9f7a" />
-    
-    {/* Decorative frosting */}
-    <circle cx="60" cy="105" r="4" fill="white" opacity="0.8" />
-    <circle cx="100" cy="102" r="4" fill="white" opacity="0.8" />
-    <circle cx="140" cy="107" r="4" fill="white" opacity="0.8" />
-    
-    {/* Candles */}
-    <rect x="70" y="70" width="4" height="25" fill="#ff6b4a" />
-    <rect x="95" y="65" width="4" height="30" fill="#ff6b4a" />
-    <rect x="120" y="72" width="4" height="23" fill="#ff6b4a" />
-    
-    {/* Flames */}
-    <ellipse cx="72" cy="65" rx="3" ry="6" fill="#FFD93D" />
-    <ellipse cx="97" cy="60" rx="3" ry="6" fill="#FFD93D" />
-    <ellipse cx="122" cy="67" rx="3" ry="6" fill="#FFD93D" />
-    
-    {/* Sparkles */}
-    <g className="animate-pulse">
-      <path d="M50 40 L52 46 L58 44 L52 50 L56 56 L50 52 L44 56 L48 50 L42 44 L48 46 Z" fill="#FFD93D" opacity="0.8" />
-      <path d="M150 30 L151 34 L155 33 L151 37 L153 41 L150 39 L147 41 L149 37 L145 33 L149 34 Z" fill="#FFD93D" opacity="0.8" />
-    </g>
-  </svg>
-);
+const TRUST_ITEMS = ["Early Access", "SMS Native", "No App Install", "Personal Memory", "Gift Hints", "Always On"]; 
 
-const GiftBoxIllustration = () => (
-  <svg width="120" height="120" viewBox="0 0 120 120" className="animate-float" style={{ animationDelay: '1s' }}>
-    <rect x="20" y="40" width="80" height="60" rx="4" fill="#ff9f7a" />
-    <rect x="20" y="30" width="80" height="20" rx="4" fill="#FFD93D" />
-    <rect x="55" y="20" width="10" height="80" fill="#ff6b4a" />
-    <rect x="15" y="45" width="90" height="10" fill="#ff6b4a" />
-    
-    {/* Bow */}
-    <ellipse cx="50" cy="25" rx="8" ry="5" fill="#e55a3a" />
-    <ellipse cx="70" cy="25" rx="8" ry="5" fill="#e55a3a" />
-    <circle cx="60" cy="25" r="4" fill="#ff6b4a" />
-    
-    {/* Sparkles */}
-    <g className="animate-pulse" style={{ animationDelay: '0.5s' }}>
-      <circle cx="30" cy="20" r="2" fill="#FFD93D" opacity="0.8" />
-      <circle cx="90" cy="15" r="1.5" fill="#FFD93D" opacity="0.8" />
-      <circle cx="85" cy="35" r="1" fill="#FFD93D" opacity="0.8" />
-    </g>
-  </svg>
-);
+const FEATURES = [
+  {
+    title: "Context that compounds",
+    copy: "Nell keeps dates, preferences, and relationship notes tied together, so every reminder carries the right context.",
+    tone: "from-[#ff5ec8]/30 to-[#ff5ec8]/5",
+  },
+  {
+    title: "Timing that feels human",
+    copy: "Get a three-day signal, day-of backup, and optional draft text so you can follow through under pressure.",
+    tone: "from-[#6f74ff]/30 to-[#6f74ff]/5",
+  },
+  {
+    title: "Text first simplicity",
+    copy: "No dashboards to babysit. You just send a message and Nell handles memory and follow-up in the background.",
+    tone: "from-[#74ffd8]/28 to-[#74ffd8]/5",
+  },
+];
 
-const BalloonIllustration = () => (
-  <svg width="100" height="150" viewBox="0 0 100 150" className="animate-float" style={{ animationDelay: '2s' }}>
-    <ellipse cx="30" cy="30" rx="18" ry="25" fill="#ff6b4a" />
-    <ellipse cx="70" cy="35" rx="18" ry="25" fill="#FFD93D" />
-    <ellipse cx="50" cy="45" rx="18" ry="25" fill="#ff9f7a" />
-    
-    {/* Strings */}
-    <line x1="30" y1="55" x2="45" y2="120" stroke="#6b7280" strokeWidth="1" />
-    <line x1="70" y1="60" x2="50" y2="120" stroke="#6b7280" strokeWidth="1" />
-    <line x1="50" y1="70" x2="55" y2="120" stroke="#6b7280" strokeWidth="1" />
-    
-    {/* Shine */}
-    <ellipse cx="25" cy="22" rx="4" ry="6" fill="white" opacity="0.6" />
-    <ellipse cx="65" cy="27" rx="4" ry="6" fill="white" opacity="0.6" />
-    <ellipse cx="45" cy="37" rx="4" ry="6" fill="white" opacity="0.6" />
-  </svg>
-);
+const STEPS = [
+  {
+    title: "Tell Nell once",
+    copy: "Drop a name, date, and whatever details matter.",
+  },
+  {
+    title: "Nell tracks the thread",
+    copy: "She stores preferences and timing in one continuous memory.",
+  },
+  {
+    title: "You show up on time",
+    copy: "Get focused reminders with message drafts when needed.",
+  },
+];
 
-// Phone mockup conversation component
-const PhoneMockup = () => {
-  const [visibleMessages, setVisibleMessages] = useState(0);
-  const conversationRef = useRef<HTMLDivElement>(null);
-
-  const messages = [
-    { type: 'user', text: "Hey Nell! My friend Jake's birthday is July 12", delay: 0 },
-    { type: 'nell', text: "Got it! 🎂 I've saved Jake's birthday (July 12). I'll remind you 3 days before. Want to tell me anything about Jake?", delay: 1000 },
-    { type: 'user', text: "He loves whiskey and hiking", delay: 2000 },
-    { type: 'nell', text: "Nice! I'll remember that. When his birthday comes around, I might have some gift ideas 🎁", delay: 3000 },
-    { type: 'divider', text: "3 days later...", delay: 4000 },
-    { type: 'nell', text: "Hey! Jake's birthday is in 3 days (July 12). He loves whiskey — maybe a nice bottle? 🥃", delay: 5000 }
-  ];
-
+function useRevealOnScroll() {
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && visibleMessages === 0) {
-          // Start message animation sequence
-          messages.forEach((_, index) => {
-            setTimeout(() => {
-              setVisibleMessages(index + 1);
-            }, messages[index].delay);
-          });
-        }
-      },
-      { threshold: 0.3 }
-    );
-
-    if (conversationRef.current) {
-      observer.observe(conversationRef.current);
+    const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    if (!elements.length) {
+      return;
     }
 
-    return () => observer.disconnect();
-  }, [visibleMessages]);
-
-  return (
-    <div ref={conversationRef} className="max-w-md mx-auto">
-      {/* Phone Frame */}
-      <div className="relative bg-[#1a1a2e] rounded-[2.5rem] p-4 shadow-2xl shadow-black/20">
-        {/* Screen */}
-        <div className="bg-black rounded-[2rem] p-1">
-          <div className="bg-white rounded-[1.8rem] h-[600px] relative overflow-hidden">
-            {/* Status bar */}
-            <div className="flex justify-between items-center px-6 py-3 text-black text-sm">
-              <span className="font-medium">9:41</span>
-              <div className="flex space-x-1">
-                <div className="w-4 h-2 bg-black rounded-sm"></div>
-                <div className="w-4 h-2 bg-black rounded-sm"></div>
-                <div className="w-6 h-2 bg-green-500 rounded-sm"></div>
-              </div>
-            </div>
-            
-            {/* Chat header */}
-            <div className="flex items-center space-x-3 px-4 py-3 border-b bg-gray-50">
-              <div className="w-8 h-8 bg-[#ff6b4a] rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">🎂</span>
-              </div>
-              <div>
-                <h3 className="font-medium text-black">Nell</h3>
-                <p className="text-xs text-gray-500">SMS • (279) 529-0731</p>
-              </div>
-            </div>
-            
-            {/* Messages */}
-            <div className="p-4 space-y-4 h-[480px] overflow-y-auto">
-              {messages.slice(0, visibleMessages).map((message, index) => {
-                if (message.type === 'divider') {
-                  return (
-                    <div key={index} className="text-center py-2 animate-message-slide-in">
-                      <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                        {message.text}
-                      </span>
-                    </div>
-                  );
-                }
-                
-                return (
-                  <div
-                    key={index}
-                    className={`flex animate-message-slide-in ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm ${
-                        message.type === 'user'
-                          ? 'bg-[#007AFF] text-white rounded-br-md'
-                          : 'bg-gray-100 text-black rounded-bl-md'
-                      }`}
-                    >
-                      {message.text}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Scroll animation hook
-const useScrollAnimation = () => {
-  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('animate');
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.1 }
+      {
+        threshold: 0.14,
+        rootMargin: "0px 0px -10% 0px",
+      }
     );
 
-    document.querySelectorAll('.scroll-animate').forEach((el) => {
-      observer.observe(el);
-    });
-
+    elements.forEach((element) => observer.observe(element));
     return () => observer.disconnect();
   }, []);
-};
+}
+
+function useScrollParallax() {
+  useEffect(() => {
+    let frame = 0;
+
+    const updateScrollVar = () => {
+      document.documentElement.style.setProperty("--scroll-y", String(window.scrollY));
+      frame = 0;
+    };
+
+    const onScroll = () => {
+      if (frame) {
+        return;
+      }
+      frame = window.requestAnimationFrame(updateScrollVar);
+    };
+
+    updateScrollVar();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
+  }, []);
+}
+
+function HeroPhone() {
+  return (
+    <div className="relative mx-auto max-w-[25rem]">
+      <div
+        aria-hidden
+        className="ambient-blob absolute -left-8 top-12 h-32 w-32 rounded-full bg-[#ff59bd]/35"
+        style={{ transform: "translateY(calc(var(--scroll-y) * -0.06px))" }}
+      />
+      <div
+        aria-hidden
+        className="ambient-blob absolute -right-10 bottom-8 h-36 w-36 rounded-full bg-[#6f74ff]/33"
+        style={{ transform: "translateY(calc(var(--scroll-y) * 0.07px))" }}
+      />
+
+      <div className="relative rounded-[2.2rem] border border-white/15 bg-[#17102a] p-3 shadow-[0_36px_100px_-50px_rgba(0,0,0,0.95)]">
+        <div className="rounded-[1.8rem] border border-white/10 bg-[#0e0a1a] p-4">
+          <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3 text-xs text-[#d9d5ef]">
+            <span>9:41</span>
+            <span>Nell</span>
+          </div>
+
+          <div className="space-y-3 text-[14px] leading-relaxed">
+            <div className="max-w-[84%] rounded-2xl rounded-bl-md bg-[#251f3a] px-3 py-2 text-[#e6e3f6]">
+              Jake birthday July 12. He still likes whiskey and hiking.
+            </div>
+            <div className="ml-auto max-w-[84%] rounded-2xl rounded-br-md bg-gradient-to-r from-[#ff57bf] to-[#ff6d8f] px-3 py-2 text-white">
+              Saved. I will remind you 3 days before and again day-of.
+            </div>
+            <div className="max-w-[84%] rounded-2xl rounded-bl-md bg-[#251f3a] px-3 py-2 text-[#e6e3f6]">
+              Great. Keep draft text short.
+            </div>
+            <div className="ml-auto max-w-[84%] rounded-2xl rounded-br-md bg-[#6f74ff] px-3 py-2 text-white">
+              Done. Two options queued for you.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute -right-6 top-6 hidden rounded-full border border-white/20 bg-[#2a223f]/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#f4efff] shadow-lg sm:block">
+        July 12 in 3 days
+      </div>
+      <div className="absolute -left-8 bottom-10 hidden rounded-full border border-white/20 bg-[#2a223f]/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#f4efff] shadow-lg sm:block">
+        Draft ready
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  useScrollAnimation();
+  useRevealOnScroll();
+  useScrollParallax();
 
   return (
     <Layout>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center">
-            <div className="flex justify-center mb-8">
-              <BirthdayCakeIllustration />
-            </div>
-            
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-8 text-[#1a1a2e]">
-              Never forget a{" "}
-              <span className="text-[#ff6b4a] relative">
-                birthday
-                <svg className="absolute -right-8 -top-4 w-16 h-16 animate-pulse" viewBox="0 0 64 64">
-                  <path d="M32 8 L36 20 L48 16 L40 28 L52 32 L40 36 L48 48 L36 44 L32 56 L28 44 L16 48 L24 36 L12 32 L24 28 L16 16 L28 20 Z" fill="#FFD93D" opacity="0.8" />
-                </svg>
-              </span>{" "}
-              again.
+      <section className="relative overflow-hidden px-4 pb-20 pt-10 sm:px-8 sm:pt-14">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
+          <div data-reveal className="reveal">
+            <p className="mb-4 inline-flex rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#bfb4df]">
+              Nell | Relationship Memory for SMS
+            </p>
+
+            <h1 className="font-display text-5xl leading-[0.97] text-white sm:text-6xl lg:text-7xl">
+              A relationship assistant
+              <span className="block bg-gradient-to-r from-[#ff57bf] via-[#ff76a5] to-[#9d8dff] bg-clip-text text-transparent">
+                built for real life chaos
+              </span>
             </h1>
-            <p className="text-xl sm:text-2xl text-[#6b7280] mb-12 max-w-3xl mx-auto leading-relaxed font-body">
-              Nell is your playful SMS friend who remembers everything about the people you care about. Just text her, and she'll make sure you never miss another special day! 🎉
+
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-[#cdc7e4] sm:text-xl">
+              Keep dates, details, and follow-up in one thread. Nell nudges you at the right moment so thoughtfulness becomes consistent.
             </p>
-            
-            {/* Phone Number Card */}
-            <div className="mb-12">
-              <div className="inline-block bg-white border-2 border-[#ff6b4a] rounded-3xl p-8 mb-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <p className="text-[#6b7280] text-lg mb-2 font-body">Text Nell right now!</p>
-                <a 
-                  href="sms:+12795290731"
-                  className="text-4xl sm:text-5xl font-display font-bold text-[#ff6b4a] hover:text-[#e55a3a] transition-colors block"
-                >
-                  (279) 529-0731
-                </a>
-                <p className="text-sm text-[#6b7280] mt-2">Tap to open your messaging app</p>
+
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <a href="sms:+12795290731" className="site-pill-btn">
+                Text Nell
+              </a>
+              <a href="#features" className="site-outline-btn">
+                See how it works
+              </a>
+            </div>
+
+            <div className="mt-8 grid max-w-lg grid-cols-3 gap-3 text-center text-sm">
+              <div className="rounded-2xl border border-white/14 bg-white/[0.04] px-3 py-3 text-[#d9d2ef]">
+                <p className="text-lg font-semibold text-white">3x</p>
+                <p>Reminder layers</p>
               </div>
-              
-              <div className="space-y-4">
-                <a
-                  href="sms:+12795290731"
-                  className="inline-flex items-center px-8 py-4 bg-[#ff6b4a] text-white text-lg font-medium rounded-full hover:bg-[#e55a3a] transition-all duration-200 shadow-lg btn-bounce"
-                >
-                  Text Nell → 💬
-                </a>
-                <div className="bg-[#FFD93D]/20 text-[#1a1a2e] px-4 py-2 rounded-full text-sm font-medium inline-block ml-4">
-                  ✨ Free during early access
-                </div>
+              <div className="rounded-2xl border border-white/14 bg-white/[0.04] px-3 py-3 text-[#d9d2ef]">
+                <p className="text-lg font-semibold text-white">0</p>
+                <p>Apps to install</p>
+              </div>
+              <div className="rounded-2xl border border-white/14 bg-white/[0.04] px-3 py-3 text-[#d9d2ef]">
+                <p className="text-lg font-semibold text-white">24/7</p>
+                <p>Memory thread</p>
               </div>
             </div>
           </div>
-          
-          {/* Floating illustrations */}
-          <div className="absolute top-20 left-10 opacity-60 hidden lg:block">
-            <GiftBoxIllustration />
-          </div>
-          <div className="absolute top-32 right-16 opacity-60 hidden lg:block">
-            <BalloonIllustration />
+
+          <div data-reveal className="reveal">
+            <HeroPhone />
           </div>
         </div>
       </section>
 
-      {/* Mock Conversation Section */}
-      <section className="px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-br from-[#ff6b4a]/5 to-[#FFD93D]/5">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 scroll-animate">
-            <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#1a1a2e] mb-6">
-              See how it works
-            </h2>
-            <p className="text-xl text-[#6b7280] max-w-2xl mx-auto font-body">
-              Watch Nell in action! She's like having a super-organized friend who never forgets important dates.
-            </p>
-          </div>
-          
-          <div className="flex justify-center">
-            <PhoneMockup />
-          </div>
+      <section className="border-y border-white/10 bg-black/10 py-5">
+        <div className="marquee-track">
+          {[...TRUST_ITEMS, ...TRUST_ITEMS].map((item, index) => (
+            <span key={`${item}-${index}`} className="marquee-item">
+              {item}
+            </span>
+          ))}
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="px-4 sm:px-6 lg:px-8 py-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 scroll-animate">
-            <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#1a1a2e] mb-6">
-              Three simple steps
-            </h2>
-            <p className="text-xl text-[#6b7280] max-w-2xl mx-auto font-body">
-              No apps, no signups, no complexity. Just pure birthday-remembering magic! ✨
-            </p>
+      <section id="features" className="px-4 py-20 sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div data-reveal className="reveal mb-12 max-w-3xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.13em] text-[#b4a8d8]">Why Nell</p>
+            <h2 className="font-display text-4xl text-white sm:text-5xl">Nell works with your social brain, not against it.</h2>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-12">
-            {[
-              {
-                number: "1",
-                title: "Text Nell",
-                description: "Send a simple text to (279) 529-0731. Say hi! No apps to download.",
-                icon: (
-                  <svg className="w-12 h-12 text-[#ff6b4a]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-                  </svg>
-                )
-              },
-              {
-                number: "2",
-                title: "Share your people",
-                description: "Tell Nell about birthdays, anniversaries, and the people you love. She remembers it all!",
-                icon: (
-                  <svg className="w-12 h-12 text-[#FFD93D]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63c-.34-1.02-1.3-1.74-2.39-1.74-.34 0-.68.07-1 .2L13 8.3V12h-2V6.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5V8l1.8-.7c.13-.05.26-.1.4-.1.47 0 .9.32 1.02.77L18.5 16H20v6h-4zM12.5 11.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S11 9.17 11 10s.67 1.5 1.5 1.5zM5.5 6c1.11 0 2-.89 2-2s-.89-2-2-2-2 .89-2 2 .89 2 2 2zm2 16v-7H9.5l-2.54-7.63A1.75 1.75 0 005.57 6c-.34 0-.68.07-1 .2L1 8.3V12h2v-2.5l1.8-.7c.13-.05.26-.1.4-.1.47 0 .9.32 1.02.77L8.5 17H10v5H7.5z"/>
-                  </svg>
-                )
-              },
-              {
-                number: "3",
-                title: "Never miss again",
-                description: "Get thoughtful reminders at just the right time. Configure timing and get gift ideas too!",
-                icon: (
-                  <svg className="w-12 h-12 text-[#ff9f7a]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                  </svg>
-                )
-              }
-            ].map((step, index) => (
-              <div key={index} className="text-center scroll-animate" style={{ animationDelay: `${index * 0.2}s` }}>
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg border-2 border-[#ff6b4a]/20">
-                  {step.icon}
-                </div>
-                <div className="w-8 h-8 bg-[#ff6b4a] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-display font-bold">
-                  {step.number}
-                </div>
-                <h3 className="text-xl font-display font-semibold mb-4 text-[#1a1a2e]">{step.title}</h3>
-                <p className="text-[#6b7280] leading-relaxed font-body max-w-sm mx-auto">
-                  {step.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="px-4 sm:px-6 lg:px-8 py-20 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 scroll-animate">
-            <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#1a1a2e] mb-6">
-              Everything you need to stay connected
-            </h2>
-            <p className="text-xl text-[#6b7280] max-w-2xl mx-auto font-body">
-              Nell is packed with thoughtful features to help you be the friend everyone loves! 💝
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                title: "Natural conversations",
-                description: "Talk to Nell like you would any friend. She understands context and remembers everything.",
-                emoji: "💬",
-                available: true
-              },
-              {
-                title: "Smart reminders",
-                description: "Configurable timing and personalized messages that help you show you care.",
-                emoji: "⏰",
-                available: true
-              },
-              {
-                title: "Gift suggestions",
-                description: "AI-powered gift ideas based on what you know about them.",
-                emoji: "🎁",
-                available: false
-              },
-              {
-                title: "Relationship tracking",
-                description: "Keep track of conversations, preferences, and relationship history.",
-                emoji: "📱",
-                available: false
-              }
-            ].map((feature, index) => (
-              <div 
-                key={index} 
-                className={`bg-white p-8 rounded-3xl border-2 shadow-lg hover:shadow-xl transition-all duration-300 scroll-animate ${
-                  feature.available 
-                    ? 'border-[#ff6b4a]/20 hover:border-[#ff6b4a]/40' 
-                    : 'border-gray-200 opacity-60'
-                }`}
-                style={{ animationDelay: `${index * 0.1}s` }}
+          <div className="grid gap-5 md:grid-cols-3">
+            {FEATURES.map((item, index) => (
+              <article
+                key={item.title}
+                data-reveal
+                className="reveal overflow-hidden rounded-[1.6rem] border border-white/14 bg-[#171129]"
+                style={{ transitionDelay: `${index * 90}ms` }}
               >
-                <div className="text-4xl mb-4">{feature.emoji}</div>
-                <h3 className="text-lg font-display font-semibold mb-3 text-[#1a1a2e]">
-                  {feature.title}
-                  {!feature.available && <span className="text-xs ml-2 bg-[#FFD93D] text-[#1a1a2e] px-2 py-1 rounded-full">Coming Soon</span>}
-                </h3>
-                <p className="text-[#6b7280] text-sm font-body leading-relaxed">{feature.description}</p>
-              </div>
+                <div className={`h-1 w-full bg-gradient-to-r ${item.tone}`} />
+                <div className="p-6">
+                  <h3 className="font-display text-2xl text-white">{item.title}</h3>
+                  <p className="mt-3 text-[15px] leading-relaxed text-[#cec6e6]">{item.copy}</p>
+                </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-br from-[#ff6b4a] to-[#ff9f7a] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10">
-            <BirthdayCakeIllustration />
+      <section className="px-4 py-20 sm:px-8">
+        <div className="mx-auto grid max-w-6xl gap-8 rounded-[2rem] border border-white/12 bg-[#140f24] p-6 sm:p-10 lg:grid-cols-[1.08fr_0.92fr]">
+          <div data-reveal className="reveal">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.13em] text-[#b3a7d8]">Conversation Layer</p>
+            <h2 className="font-display text-4xl text-white sm:text-5xl">One thread in. High signal out.</h2>
+            <p className="mt-5 max-w-xl text-lg text-[#cac2e3]">
+              Nell turns one text thread into reminders, context recall, and smart draft help so you never scramble at the last minute.
+            </p>
           </div>
-          <div className="absolute bottom-10 right-10">
-            <GiftBoxIllustration />
-          </div>
-          <div className="absolute top-1/2 left-1/4 transform -translate-y-1/2">
-            <BalloonIllustration />
+
+          <div data-reveal className="reveal grid gap-3">
+            <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 text-sm text-[#e2dcf3]">Three-day heads-up for every important date</div>
+            <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 text-sm text-[#e2dcf3]">Same-day backup with optional message drafts</div>
+            <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 text-sm text-[#e2dcf3]">Person-specific memory for gifts and tone</div>
           </div>
         </div>
-        
-        <div className="max-w-4xl mx-auto relative z-10">
-          <div className="text-center scroll-animate">
-            <h2 className="text-3xl sm:text-5xl font-display font-bold text-white mb-6">
-              Ready to be the friend who never forgets?
-            </h2>
-            <p className="text-xl text-white/90 mb-12 max-w-2xl mx-auto font-body leading-relaxed">
-              Join the early access and start strengthening your relationships today. Your friends will love how thoughtful you've become! ✨
-            </p>
-            
-            <div className="space-y-6">
-              <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-8 max-w-md mx-auto">
-                <p className="text-white/90 text-lg mb-4 font-body">Text Nell now at</p>
-                <a 
-                  href="sms:+12795290731"
-                  className="inline-block text-4xl sm:text-5xl font-display font-bold text-white hover:text-white/90 transition-colors"
-                >
-                  (279) 529-0731
-                </a>
-              </div>
-              
-              <div className="space-x-4">
-                <a
-                  href="sms:+12795290731"
-                  className="inline-flex items-center px-10 py-4 bg-white text-[#ff6b4a] text-lg font-medium rounded-full hover:bg-gray-50 transition-all duration-200 shadow-lg btn-bounce"
-                >
-                  Start your first conversation 🚀
-                </a>
-              </div>
-              
-              <p className="text-white/70 text-sm font-body">
-                Free during early access • No apps required • Cancel anytime
-              </p>
-            </div>
+      </section>
+
+      <section className="px-4 py-20 sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div data-reveal className="reveal mb-12 max-w-3xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.13em] text-[#b4a8d8]">Workflow</p>
+            <h2 className="font-display text-4xl text-white sm:text-5xl">Set up in under one minute.</h2>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {STEPS.map((step, index) => (
+              <article
+                key={step.title}
+                data-reveal
+                className="reveal rounded-[1.5rem] border border-white/12 bg-[#161028] p-6"
+                style={{ transitionDelay: `${index * 100}ms` }}
+              >
+                <p className="mb-3 text-sm font-semibold text-[#8f84b4]">0{index + 1}</p>
+                <h3 className="font-display text-2xl text-white">{step.title}</h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-[#d0c9e8]">{step.copy}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 pb-24 sm:px-8">
+        <div
+          data-reveal
+          className="reveal mx-auto max-w-5xl rounded-[2.2rem] border border-white/20 bg-gradient-to-br from-[#ff4fbe] via-[#ff649a] to-[#8172ff] p-10 shadow-[0_34px_100px_-48px_rgba(0,0,0,0.95)] sm:p-14"
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#ffe7f8]">Ready</p>
+          <h2 className="mt-3 font-display text-4xl leading-tight text-white sm:text-5xl">Build better friendship follow-through with one text.</h2>
+          <p className="mt-5 max-w-2xl text-lg text-[#ffe8f6]">Nell is live in early access. Start the thread and let memory run in the background.</p>
+
+          <div className="mt-9 flex flex-wrap items-center gap-4">
+            <a href="sms:+12795290731" className="rounded-full bg-[#140d23] px-8 py-3 text-base font-semibold text-white transition hover:bg-black">
+              Text Nell at (279) 529-0731
+            </a>
+            <span className="rounded-full border border-white/35 bg-white/10 px-4 py-2 text-sm text-[#ffeaf8]">No app install required</span>
           </div>
         </div>
       </section>

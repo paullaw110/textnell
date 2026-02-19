@@ -1,123 +1,64 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 interface LayoutProps {
   children: React.ReactNode;
   showNavigation?: boolean;
 }
 
-// Floating confetti component
-const ConfettiPiece = ({ delay = 0 }: { delay?: number }) => (
-  <div 
-    className="absolute animate-confetti opacity-70"
-    style={{ 
-      left: `${Math.random() * 100}%`, 
-      animationDelay: `${delay}s`,
-      animationDuration: `${3 + Math.random() * 2}s`
-    }}
-  >
-    <div 
-      className="w-2 h-2 rotate-45"
-      style={{ 
-        backgroundColor: ['#ff6b4a', '#FFD93D', '#ff9f7a', '#ffd93d'][Math.floor(Math.random() * 4)]
-      }}
-    />
-  </div>
-);
-
-const BirthdayCakeIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="animate-float">
-    <rect x="4" y="13" width="16" height="8" rx="2" fill="#ff6b4a" />
-    <rect x="6" y="11" width="12" height="4" rx="1" fill="#FFD93D" />
-    <rect x="8" y="9" width="8" height="4" rx="1" fill="#ff9f7a" />
-    <line x1="10" y1="5" x2="10" y2="9" stroke="#ff6b4a" strokeWidth="2" strokeLinecap="round" />
-    <line x1="12" y1="4" x2="12" y2="9" stroke="#ff6b4a" strokeWidth="2" strokeLinecap="round" />
-    <line x1="14" y1="5" x2="14" y2="9" stroke="#ff6b4a" strokeWidth="2" strokeLinecap="round" />
-    <circle cx="10" cy="4" r="1.5" fill="#FFD93D" />
-    <circle cx="12" cy="3" r="1.5" fill="#FFD93D" />
-    <circle cx="14" cy="4" r="1.5" fill="#FFD93D" />
+const NellGlyph = () => (
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden>
+    <circle cx="14" cy="14" r="13" fill="#1a1230" stroke="#4d3e69" />
+    <circle cx="10" cy="11" r="1.8" fill="#ff58bf" />
+    <circle cx="18" cy="11" r="1.8" fill="#ff58bf" />
+    <path d="M10 17c1.2 1 2.5 1.5 4 1.5s2.8-.5 4-1.5" stroke="#9f92c8" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 
 export default function Layout({ children, showNavigation = true }: LayoutProps) {
-  const [showConfetti, setShowConfetti] = useState(false);
-
-  useEffect(() => {
-    // Show confetti on page load
-    setShowConfetti(true);
-    const timer = setTimeout(() => setShowConfetti(false), 6000);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#FFF8F0] text-[#1a1a2e] relative overflow-x-hidden">
-      {/* Confetti */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <ConfettiPiece key={i} delay={i * 0.2} />
-          ))}
-        </div>
-      )}
-      
-      {showNavigation && (
-        <nav className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-[#e5e7eb] shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <Link 
-                href="/" 
-                className="flex items-center space-x-2 text-2xl font-display font-bold text-[#1a1a2e] hover:text-[#ff6b4a] transition-colors"
-              >
-                <BirthdayCakeIcon />
-                <span>Nell</span>
+    <div className="relative min-h-screen overflow-x-hidden">
+      {showNavigation ? (
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0f091b]/88 backdrop-blur-xl">
+          <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <Link href="/" className="flex items-center gap-2 text-white">
+              <NellGlyph />
+              <span className="font-display text-[1.8rem] leading-none">Nell</span>
+            </Link>
+
+            <div className="flex items-center gap-4">
+              <Link href="/privacy" className="hidden text-xs font-semibold uppercase tracking-[0.11em] text-[#c8c0e1] transition hover:text-white sm:inline-flex">
+                Privacy
               </Link>
-              <a
-                href="sms:+12795290731"
-                className="bg-[#ff6b4a] text-white px-6 py-3 rounded-full font-medium hover:bg-[#e55a3a] transition-all duration-200 btn-bounce shadow-lg"
-              >
-                Text Nell 💬
+              <Link href="/terms" className="hidden text-xs font-semibold uppercase tracking-[0.11em] text-[#c8c0e1] transition hover:text-white sm:inline-flex">
+                Terms
+              </Link>
+              <a href="sms:+12795290731" className="site-pill-btn px-4 py-2 text-[11px]">
+                Text Nell
               </a>
             </div>
+          </nav>
+        </header>
+      ) : null}
+
+      <main className="relative z-10">{children}</main>
+
+      <footer className="relative z-10 border-t border-white/10 bg-[#0f091b]/78">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 text-white">
+            <NellGlyph />
+            <span className="font-display text-xl">Nell</span>
           </div>
-        </nav>
-      )}
-      
-      <main className="flex-1 relative z-10">
-        {children}
-      </main>
-      
-      <footer className="bg-white border-t border-[#e5e7eb] relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-8">
-              <Link 
-                href="/" 
-                className="flex items-center space-x-2 text-xl font-display font-bold text-[#1a1a2e]"
-              >
-                <BirthdayCakeIcon />
-                <span>Nell</span>
-              </Link>
-              <div className="flex space-x-6 text-sm">
-                <Link 
-                  href="/privacy" 
-                  className="text-[#6b7280] hover:text-[#1a1a2e] transition-colors"
-                >
-                  Privacy
-                </Link>
-                <Link 
-                  href="/terms" 
-                  className="text-[#6b7280] hover:text-[#1a1a2e] transition-colors"
-                >
-                  Terms
-                </Link>
-              </div>
-            </div>
-            <div className="text-sm text-[#6b7280]">
-              Made with 💝 by Nell • © 2026
-            </div>
+
+          <div className="flex items-center gap-5 text-xs font-semibold uppercase tracking-[0.11em] text-[#beb6d8]">
+            <Link href="/privacy" className="transition hover:text-white">
+              Privacy
+            </Link>
+            <Link href="/terms" className="transition hover:text-white">
+              Terms
+            </Link>
           </div>
+
+          <div className="text-xs uppercase tracking-[0.11em] text-[#aaa1c9]">SMS concierge for thoughtful friendships | 2026</div>
         </div>
       </footer>
     </div>
