@@ -111,9 +111,9 @@ const PhoneMockup = () => {
   }, [visibleMessages]);
 
   return (
-    <div ref={conversationRef} className="max-w-sm mx-auto">
+    <div ref={conversationRef} className="max-w-md mx-auto">
       {/* Phone Frame */}
-      <div className="relative bg-[#1a1a2e] rounded-[2.5rem] p-4 shadow-2xl">
+      <div className="relative bg-[#1a1a2e] rounded-[2.5rem] p-4 shadow-2xl shadow-black/20">
         {/* Screen */}
         <div className="bg-black rounded-[2rem] p-1">
           <div className="bg-white rounded-[1.8rem] h-[600px] relative overflow-hidden">
@@ -204,7 +204,7 @@ export default function Home() {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative px-4 sm:px-6 lg:px-8 pt-8 pb-20">
+      <section className="relative overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center">
             <div className="flex justify-center mb-8">
