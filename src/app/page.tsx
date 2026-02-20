@@ -151,17 +151,17 @@ function PhoneMockup() {
 
         {/* Messages */}
         <div className="bg-[#f5f5f5] px-4 pb-6 pt-2 space-y-3 min-h-[340px]">
-          <div className="sms-bubble sms-bubble-incoming" data-delay="200">
+          <div className="sms-bubble sms-bubble-outgoing" data-delay="200">
             Jake birthday July 12. He still likes whiskey and hiking.
           </div>
-          <div className="sms-bubble sms-bubble-outgoing" data-delay="600">
-            Saved. I will remind you 3 days before and again day-of.
+          <div className="sms-bubble sms-bubble-incoming" data-delay="600">
+            Saved! 🎂 I'll remind you 3 days before and again day-of. Want to add anything else about Jake?
           </div>
-          <div className="sms-bubble sms-bubble-incoming" data-delay="1000">
-            Great. Keep draft text short.
+          <div className="sms-bubble sms-bubble-outgoing" data-delay="1000">
+            He loves bourbon. Keep draft texts short.
           </div>
-          <div className="sms-bubble sms-bubble-outgoing" data-delay="1400">
-            Done. Two options queued for you.
+          <div className="sms-bubble sms-bubble-incoming" data-delay="1400">
+            Got it — bourbon lover, short drafts. You're all set for July 12.
           </div>
         </div>
 
@@ -191,7 +191,7 @@ export default function Home() {
   return (
     <Layout>
       {/* ═══════════ HERO ═══════════ */}
-      <section className="hero-gradient relative min-h-screen flex flex-col items-center justify-center px-6 sm:px-8">
+      <section className="hero-gradient relative min-h-screen flex flex-col items-center justify-center px-6 sm:px-8 pt-20">
         <div className="max-w-4xl mx-auto text-center" data-reveal>
           <p className="reveal mb-6 text-sm font-semibold uppercase tracking-[0.2em] text-[#ff6b4a]">
             Relationship Memory for SMS

@@ -9,9 +9,9 @@ export default function Layout({ children, showNavigation = true }: LayoutProps)
   return (
     <div className="grain min-h-screen bg-[#FFF8F0] text-[#1a1a2e] relative overflow-x-hidden">
       {showNavigation && (
-        <nav className="fixed top-0 left-0 right-0 z-50 mix-blend-normal">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FFF8F0]/80 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-            <div className="flex justify-between items-center h-20">
+            <div className="flex justify-between items-center h-16">
               <Link
                 href="/"
                 className="font-display text-2xl text-[#1a1a2e] hover:text-[#ff6b4a] transition-colors duration-300"
