@@ -54,15 +54,29 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
 /* ── Reveal system ── */
-.reveal {
+[data-reveal] .reveal {
   opacity: 0;
   transform: translateY(40px);
   transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
               transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
+[data-reveal].reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-reveal].is-visible .reveal,
+[data-reveal].is-visible.reveal,
 .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+/* Fallback: ensure content visible if JS fails */
+.no-js .reveal,
+.no-js [data-reveal] .reveal {
+  opacity: 1;
+  transform: none;
 }
 
 /* ── Hero ── */
@@ -255,6 +269,19 @@ body {
 .btn-secondary:hover {
   border-color: var(--coral);
   color: var(--coral);
+}
+
+/* ── Section safety padding ── */
+section {
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+}
+
+@media (min-width: 640px) {
+  section {
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
