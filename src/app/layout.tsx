@@ -15,20 +15,20 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Nell - Never forget a birthday again",
-  description: "Your playful SMS birthday reminder friend. Text Nell at (279) 529-0731 to get started.",
-  keywords: ["birthday", "reminder", "SMS", "CRM", "relationships", "text"],
+  title: "Nell — Never Forget the People Who Matter",
+  description: "Nell is a friendly AI you text. She remembers birthdays, suggests gifts, and helps you show up for your people. No app needed. Just text (279) 529-0731.",
+  keywords: ["birthday", "reminder", "SMS", "relationships", "gift suggestions", "AI assistant"],
   authors: [{ name: "Nell" }],
   openGraph: {
-    title: "Nell - Never forget a birthday again",
-    description: "Your playful SMS birthday reminder friend. Text Nell at (279) 529-0731 to get started.",
+    title: "Nell — Never Forget the People Who Matter",
+    description: "Nell is a friendly AI you text. She remembers birthdays, suggests gifts, and helps you show up for your people. No app needed. Just text (279) 529-0731.",
     type: "website",
     url: "https://textnell.com",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nell - Never forget a birthday again",
-    description: "Your playful SMS birthday reminder friend. Text Nell at (279) 529-0731 to get started.",
+    title: "Nell — Never Forget the People Who Matter",
+    description: "Nell is a friendly AI you text. She remembers birthdays, suggests gifts, and helps you show up for your people. No app needed. Just text (279) 529-0731.",
   },
 };
 
