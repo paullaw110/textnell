@@ -1,25 +1,25 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import { useEffect } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
-const TRUST_ITEMS = ["Early Access", "SMS Native", "No App Install", "Personal Memory", "Gift Hints", "Always On"]; 
+const TRUST_ITEMS = ["Early Access", "SMS Native", "No App Install", "Personal Memory", "Gift Hints", "Always On"];
 
 const FEATURES = [
   {
     title: "Context that compounds",
     copy: "Nell keeps dates, preferences, and relationship notes tied together, so every reminder carries the right context.",
-    tone: "from-[#ff5ec8]/30 to-[#ff5ec8]/5",
+    icon: "🧠",
   },
   {
     title: "Timing that feels human",
     copy: "Get a three-day signal, day-of backup, and optional draft text so you can follow through under pressure.",
-    tone: "from-[#6f74ff]/30 to-[#6f74ff]/5",
+    icon: "⏰",
   },
   {
     title: "Text first simplicity",
     copy: "No dashboards to babysit. You just send a message and Nell handles memory and follow-up in the background.",
-    tone: "from-[#74ffd8]/28 to-[#74ffd8]/5",
+    icon: "💬",
   },
 ];
 
@@ -38,12 +38,35 @@ const STEPS = [
   },
 ];
 
+const STATS = [
+  { label: "SMS", value: "98%", sublabel: "open rate", width: "98%", color: "#ff6b4a" },
+  { label: "Email", value: "20%", sublabel: "open rate", width: "20%", color: "#e8e0d8" },
+  { label: "App push", value: "3.5%", sublabel: "open rate", width: "3.5%", color: "#e8e0d8" },
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "What exactly is Nell?",
+    a: "Nell is a friendly AI you text. She remembers birthdays, suggests gifts, and helps you show up for your people. No app needed.",
+  },
+  {
+    q: "How much does it cost?",
+    a: "Nell is free during early access. We'll introduce simple pricing later, but early users will always get a great deal.",
+  },
+  {
+    q: "Is my data private?",
+    a: "Yes. Your conversations are encrypted and never sold. Nell only uses your data to help you be a better friend.",
+  },
+  {
+    q: "What if I want to stop?",
+    a: "Just text STOP anytime. Your data gets deleted. No guilt trips, no dark patterns.",
+  },
+];
+
 function useRevealOnScroll() {
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
-    if (!elements.length) {
-      return;
-    }
+    if (!elements.length) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -54,88 +77,108 @@ function useRevealOnScroll() {
           }
         });
       },
-      {
-        threshold: 0.14,
-        rootMargin: "0px 0px -10% 0px",
-      }
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
     );
 
-    elements.forEach((element) => observer.observe(element));
+    elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 }
 
-function useScrollParallax() {
+function useSMSAnimation() {
   useEffect(() => {
-    let frame = 0;
+    const bubbles = Array.from(document.querySelectorAll<HTMLElement>(".sms-bubble"));
+    if (!bubbles.length) return;
 
-    const updateScrollVar = () => {
-      document.documentElement.style.setProperty("--scroll-y", String(window.scrollY));
-      frame = 0;
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const el = entry.target as HTMLElement;
+            const delay = parseInt(el.dataset.delay || "0", 10);
+            setTimeout(() => el.classList.add("is-visible"), delay);
+            observer.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
 
-    const onScroll = () => {
-      if (frame) {
-        return;
-      }
-      frame = window.requestAnimationFrame(updateScrollVar);
-    };
-
-    updateScrollVar();
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame) {
-        window.cancelAnimationFrame(frame);
-      }
-    };
+    bubbles.forEach((b) => observer.observe(b));
+    return () => observer.disconnect();
   }, []);
 }
 
-function HeroPhone() {
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="relative mx-auto max-w-[25rem]">
-      <div
-        aria-hidden
-        className="ambient-blob absolute -left-8 top-12 h-32 w-32 rounded-full bg-[#ff59bd]/35"
-        style={{ transform: "translateY(calc(var(--scroll-y) * -0.06px))" }}
-      />
-      <div
-        aria-hidden
-        className="ambient-blob absolute -right-10 bottom-8 h-36 w-36 rounded-full bg-[#6f74ff]/33"
-        style={{ transform: "translateY(calc(var(--scroll-y) * 0.07px))" }}
-      />
+    <div className="border-b border-[#e8e0d8]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-6 text-left group"
+      >
+        <span className="font-display text-lg sm:text-xl text-[#1a1a2e] group-hover:text-[#ff6b4a] transition-colors duration-300 pr-4">
+          {q}
+        </span>
+        <span
+          className="text-2xl text-[#9a918a] transition-transform duration-300 flex-shrink-0"
+          style={{ transform: open ? "rotate(45deg)" : "rotate(0deg)" }}
+        >
+          +
+        </span>
+      </button>
+      <div className={`faq-answer ${open ? "is-open" : ""}`}>
+        <div className="faq-answer-inner">
+          <p className="pb-6 text-[#6b6360] leading-relaxed max-w-2xl">{a}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      <div className="relative rounded-[2.2rem] border border-white/15 bg-[#17102a] p-3 shadow-[0_36px_100px_-50px_rgba(0,0,0,0.95)]">
-        <div className="rounded-[1.8rem] border border-white/10 bg-[#0e0a1a] p-4">
-          <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3 text-xs text-[#d9d5ef]">
-            <span>9:41</span>
-            <span>Nell</span>
+function PhoneMockup() {
+  return (
+    <div className="phone-frame mx-auto max-w-[320px] sm:max-w-[340px]">
+      <div className="phone-screen">
+        {/* Status bar */}
+        <div className="bg-[#f5f5f5] px-6 pt-14 pb-2 flex items-center justify-between text-xs font-semibold text-[#1a1a1a]">
+          <span>9:41</span>
+          <span className="text-[13px]">Nell</span>
+          <span className="flex gap-0.5">
+            <span>●●●</span>
+          </span>
+        </div>
+
+        {/* Messages */}
+        <div className="bg-[#f5f5f5] px-4 pb-6 pt-2 space-y-3 min-h-[340px]">
+          <div className="sms-bubble sms-bubble-incoming" data-delay="200">
+            Jake birthday July 12. He still likes whiskey and hiking.
           </div>
+          <div className="sms-bubble sms-bubble-outgoing" data-delay="600">
+            Saved. I will remind you 3 days before and again day-of.
+          </div>
+          <div className="sms-bubble sms-bubble-incoming" data-delay="1000">
+            Great. Keep draft text short.
+          </div>
+          <div className="sms-bubble sms-bubble-outgoing" data-delay="1400">
+            Done. Two options queued for you.
+          </div>
+        </div>
 
-          <div className="space-y-3 text-[14px] leading-relaxed">
-            <div className="max-w-[84%] rounded-2xl rounded-bl-md bg-[#251f3a] px-3 py-2 text-[#e6e3f6]">
-              Jake birthday July 12. He still likes whiskey and hiking.
+        {/* Input bar */}
+        <div className="bg-[#f5f5f5] px-4 pb-6 pt-2 border-t border-[#e0e0e0]">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-white rounded-full border border-[#d0d0d0] px-4 py-2 text-sm text-[#999]">
+              Text Message
             </div>
-            <div className="ml-auto max-w-[84%] rounded-2xl rounded-br-md bg-gradient-to-r from-[#ff57bf] to-[#ff6d8f] px-3 py-2 text-white">
-              Saved. I will remind you 3 days before and again day-of.
-            </div>
-            <div className="max-w-[84%] rounded-2xl rounded-bl-md bg-[#251f3a] px-3 py-2 text-[#e6e3f6]">
-              Great. Keep draft text short.
-            </div>
-            <div className="ml-auto max-w-[84%] rounded-2xl rounded-br-md bg-[#6f74ff] px-3 py-2 text-white">
-              Done. Two options queued for you.
+            <div className="w-8 h-8 rounded-full bg-[#ff6b4a] flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="absolute -right-6 top-6 hidden rounded-full border border-white/20 bg-[#2a223f]/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#f4efff] shadow-lg sm:block">
-        July 12 in 3 days
-      </div>
-      <div className="absolute -left-8 bottom-10 hidden rounded-full border border-white/20 bg-[#2a223f]/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#f4efff] shadow-lg sm:block">
-        Draft ready
       </div>
     </div>
   );
@@ -143,62 +186,52 @@ function HeroPhone() {
 
 export default function Home() {
   useRevealOnScroll();
-  useScrollParallax();
+  useSMSAnimation();
 
   return (
     <Layout>
-      <section className="relative overflow-hidden px-4 pb-20 pt-10 sm:px-8 sm:pt-14">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
-          <div data-reveal className="reveal">
-            <p className="mb-4 inline-flex rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#bfb4df]">
-              Nell | Relationship Memory for SMS
-            </p>
+      {/* ═══════════ HERO ═══════════ */}
+      <section className="hero-gradient relative min-h-screen flex flex-col items-center justify-center px-6 sm:px-8">
+        <div className="max-w-4xl mx-auto text-center" data-reveal>
+          <p className="reveal mb-6 text-sm font-semibold uppercase tracking-[0.2em] text-[#ff6b4a]">
+            Relationship Memory for SMS
+          </p>
 
-            <h1 className="font-display text-5xl leading-[0.97] text-white sm:text-6xl lg:text-7xl">
-              A relationship assistant
-              <span className="block bg-gradient-to-r from-[#ff57bf] via-[#ff76a5] to-[#9d8dff] bg-clip-text text-transparent">
-                built for real life chaos
-              </span>
-            </h1>
+          <h1 className="reveal font-display text-[clamp(3rem,8vw,7.5rem)] leading-[0.92] text-[#1a1a2e]">
+            Never forget
+            <br />
+            <span className="text-[#ff6b4a]">the people</span>
+            <br />
+            who matter
+          </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-[#cdc7e4] sm:text-xl">
-              Keep dates, details, and follow-up in one thread. Nell nudges you at the right moment so thoughtfulness becomes consistent.
-            </p>
+          <p className="reveal mt-8 max-w-lg mx-auto text-lg sm:text-xl text-[#6b6360] leading-relaxed" style={{ transitionDelay: "150ms" }}>
+            Keep dates, details, and follow-up in one thread. Nell nudges you at the right moment so thoughtfulness becomes consistent.
+          </p>
 
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <a href="sms:+12795290731" className="site-pill-btn">
-                Text Nell
-              </a>
-              <a href="#features" className="site-outline-btn">
-                See how it works
-              </a>
-            </div>
-
-            <div className="mt-8 grid max-w-lg grid-cols-3 gap-3 text-center text-sm">
-              <div className="rounded-2xl border border-white/14 bg-white/[0.04] px-3 py-3 text-[#d9d2ef]">
-                <p className="text-lg font-semibold text-white">3x</p>
-                <p>Reminder layers</p>
-              </div>
-              <div className="rounded-2xl border border-white/14 bg-white/[0.04] px-3 py-3 text-[#d9d2ef]">
-                <p className="text-lg font-semibold text-white">0</p>
-                <p>Apps to install</p>
-              </div>
-              <div className="rounded-2xl border border-white/14 bg-white/[0.04] px-3 py-3 text-[#d9d2ef]">
-                <p className="text-lg font-semibold text-white">24/7</p>
-                <p>Memory thread</p>
-              </div>
-            </div>
+          <div className="reveal mt-10 flex flex-wrap items-center justify-center gap-4" style={{ transitionDelay: "250ms" }}>
+            <a href="sms:+12795290731" className="btn-primary">
+              Text Nell
+            </a>
+            <a href="#conversation" className="btn-secondary">
+              See how it works
+            </a>
           </div>
+        </div>
 
-          <div data-reveal className="reveal">
-            <HeroPhone />
-          </div>
+        {/* Scroll indicator */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 hero-scroll-indicator">
+          <span className="text-xs uppercase tracking-[0.2em] text-[#9a918a]">Scroll</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9a918a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
       </section>
 
-      <section className="border-y border-white/10 bg-black/10 py-5">
+      {/* ═══════════ TRUST MARQUEE ═══════════ */}
+      <section className="border-y border-[#e8e0d8] py-5 overflow-hidden">
         <div className="marquee-track">
-          {[...TRUST_ITEMS, ...TRUST_ITEMS].map((item, index) => (
+          {[...TRUST_ITEMS, ...TRUST_ITEMS, ...TRUST_ITEMS].map((item, index) => (
             <span key={`${item}-${index}`} className="marquee-item">
               {item}
             </span>
@@ -206,25 +239,127 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="px-4 py-20 sm:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div data-reveal className="reveal mb-12 max-w-3xl">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.13em] text-[#b4a8d8]">Why Nell</p>
-            <h2 className="font-display text-4xl text-white sm:text-5xl">Nell works with your social brain, not against it.</h2>
+      {/* ═══════════ SMS CONVERSATION ═══════════ */}
+      <section id="conversation" className="px-6 sm:px-8 py-28 sm:py-36">
+        <div className="mx-auto max-w-6xl grid gap-16 lg:grid-cols-[1fr_1fr] items-center">
+          <div data-reveal className="reveal">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-[#ff6b4a]">
+              Conversation Layer
+            </p>
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#1a1a2e] leading-[0.95]">
+              One thread in.
+              <br />
+              <span className="text-[#9a918a]">High signal out.</span>
+            </h2>
+            <p className="mt-6 max-w-md text-lg text-[#6b6360] leading-relaxed">
+              Nell turns one text thread into reminders, context recall, and smart draft help so you never scramble at the last minute.
+            </p>
+
+            <div className="mt-10 space-y-4">
+              {["Three-day heads-up for every important date", "Same-day backup with optional message drafts", "Person-specific memory for gifts and tone"].map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="mt-1 w-2 h-2 rounded-full bg-[#ff6b4a] flex-shrink-0" />
+                  <span className="text-[#4a3f3a]">{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div data-reveal className="reveal" style={{ transitionDelay: "200ms" }}>
+            <PhoneMockup />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ FEATURES ═══════════ */}
+      <section id="features" className="px-6 sm:px-8 py-28 sm:py-36 bg-[#1a1a2e]">
+        <div className="mx-auto max-w-6xl">
+          <div data-reveal className="reveal mb-16 max-w-3xl">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-[#ff9f7a]">
+              Why Nell
+            </p>
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#FFF8F0] leading-[0.95]">
+              Nell works with your social brain, not against it.
+            </h2>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
             {FEATURES.map((item, index) => (
               <article
                 key={item.title}
                 data-reveal
-                className="reveal overflow-hidden rounded-[1.6rem] border border-white/14 bg-[#171129]"
-                style={{ transitionDelay: `${index * 90}ms` }}
+                className="reveal group rounded-3xl bg-[#252040] p-8 sm:p-10 transition-all duration-500 hover:bg-[#2d2748]"
+                style={{ transitionDelay: `${index * 120}ms` }}
               >
-                <div className={`h-1 w-full bg-gradient-to-r ${item.tone}`} />
-                <div className="p-6">
-                  <h3 className="font-display text-2xl text-white">{item.title}</h3>
-                  <p className="mt-3 text-[15px] leading-relaxed text-[#cec6e6]">{item.copy}</p>
+                <span className="text-4xl mb-6 block">{item.icon}</span>
+                <h3 className="font-display text-2xl sm:text-3xl text-[#FFF8F0] mb-4">{item.title}</h3>
+                <p className="text-[#a09ab8] leading-relaxed">{item.copy}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ STATS ═══════════ */}
+      <section className="px-6 sm:px-8 py-28 sm:py-36">
+        <div className="mx-auto max-w-5xl">
+          <div data-reveal className="reveal text-center mb-20">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-[#ff6b4a]">
+              Why SMS
+            </p>
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#1a1a2e] leading-[0.95]">
+              Texts get read.<br />
+              <span className="text-[#9a918a]">Everything else gets buried.</span>
+            </h2>
+          </div>
+
+          <div data-reveal className="reveal grid gap-12 md:grid-cols-3">
+            {STATS.map((stat, i) => (
+              <div key={stat.label} className="text-center" style={{ transitionDelay: `${i * 150}ms` }}>
+                <p className="font-display text-[clamp(4rem,8vw,6rem)] leading-none text-[#1a1a2e]" style={{ color: stat.color === "#ff6b4a" ? "#ff6b4a" : "#c8c0b8" }}>
+                  {stat.value}
+                </p>
+                <p className="mt-2 text-sm uppercase tracking-[0.15em] font-semibold text-[#6b6360]">
+                  {stat.label} {stat.sublabel}
+                </p>
+                <div className="stat-bar mt-4">
+                  <div
+                    className="stat-bar-fill"
+                    style={{ width: stat.width, backgroundColor: stat.color, transitionDelay: `${i * 200 + 400}ms` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ WORKFLOW / STEPS ═══════════ */}
+      <section className="px-6 sm:px-8 py-28 sm:py-36 border-t border-[#e8e0d8]">
+        <div className="mx-auto max-w-6xl">
+          <div data-reveal className="reveal mb-16 max-w-3xl">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-[#ff6b4a]">
+              Workflow
+            </p>
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#1a1a2e] leading-[0.95]">
+              Set up in under one minute.
+            </h2>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {STEPS.map((step, index) => (
+              <article
+                key={step.title}
+                data-reveal
+                className="reveal relative"
+                style={{ transitionDelay: `${index * 120}ms` }}
+              >
+                <span className="font-display text-8xl text-[#ff6b4a]/10 absolute -top-4 -left-2 select-none">
+                  {index + 1}
+                </span>
+                <div className="relative pt-12">
+                  <h3 className="font-display text-2xl sm:text-3xl text-[#1a1a2e] mb-3">{step.title}</h3>
+                  <p className="text-[#6b6360] leading-relaxed">{step.copy}</p>
                 </div>
               </article>
             ))}
@@ -232,63 +367,53 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="px-4 py-20 sm:px-8">
-        <div className="mx-auto grid max-w-6xl gap-8 rounded-[2rem] border border-white/12 bg-[#140f24] p-6 sm:p-10 lg:grid-cols-[1.08fr_0.92fr]">
+      {/* ═══════════ FAQ ═══════════ */}
+      <section className="px-6 sm:px-8 py-28 sm:py-36 border-t border-[#e8e0d8]">
+        <div className="mx-auto max-w-3xl">
+          <div data-reveal className="reveal mb-12">
+            <h2 className="font-display text-4xl sm:text-5xl text-[#1a1a2e]">
+              Questions
+            </h2>
+          </div>
+
           <div data-reveal className="reveal">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.13em] text-[#b3a7d8]">Conversation Layer</p>
-            <h2 className="font-display text-4xl text-white sm:text-5xl">One thread in. High signal out.</h2>
-            <p className="mt-5 max-w-xl text-lg text-[#cac2e3]">
-              Nell turns one text thread into reminders, context recall, and smart draft help so you never scramble at the last minute.
-            </p>
-          </div>
-
-          <div data-reveal className="reveal grid gap-3">
-            <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 text-sm text-[#e2dcf3]">Three-day heads-up for every important date</div>
-            <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 text-sm text-[#e2dcf3]">Same-day backup with optional message drafts</div>
-            <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 text-sm text-[#e2dcf3]">Person-specific memory for gifts and tone</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 py-20 sm:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div data-reveal className="reveal mb-12 max-w-3xl">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.13em] text-[#b4a8d8]">Workflow</p>
-            <h2 className="font-display text-4xl text-white sm:text-5xl">Set up in under one minute.</h2>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-3">
-            {STEPS.map((step, index) => (
-              <article
-                key={step.title}
-                data-reveal
-                className="reveal rounded-[1.5rem] border border-white/12 bg-[#161028] p-6"
-                style={{ transitionDelay: `${index * 100}ms` }}
-              >
-                <p className="mb-3 text-sm font-semibold text-[#8f84b4]">0{index + 1}</p>
-                <h3 className="font-display text-2xl text-white">{step.title}</h3>
-                <p className="mt-3 text-[15px] leading-relaxed text-[#d0c9e8]">{step.copy}</p>
-              </article>
+            {FAQ_ITEMS.map((item) => (
+              <FAQItem key={item.q} q={item.q} a={item.a} />
             ))}
           </div>
         </div>
       </section>
 
-      <section className="px-4 pb-24 sm:px-8">
-        <div
-          data-reveal
-          className="reveal mx-auto max-w-5xl rounded-[2.2rem] border border-white/20 bg-gradient-to-br from-[#ff4fbe] via-[#ff649a] to-[#8172ff] p-10 shadow-[0_34px_100px_-48px_rgba(0,0,0,0.95)] sm:p-14"
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#ffe7f8]">Ready</p>
-          <h2 className="mt-3 font-display text-4xl leading-tight text-white sm:text-5xl">Build better friendship follow-through with one text.</h2>
-          <p className="mt-5 max-w-2xl text-lg text-[#ffe8f6]">Nell is live in early access. Start the thread and let memory run in the background.</p>
+      {/* ═══════════ FINAL CTA ═══════════ */}
+      <section className="px-6 sm:px-8 py-28 sm:py-36 bg-gradient-to-br from-[#ff6b4a] via-[#ff8a6a] to-[#ff9f7a] relative overflow-hidden">
+        {/* Subtle texture */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '32px 32px'
+        }} />
 
-          <div className="mt-9 flex flex-wrap items-center gap-4">
-            <a href="sms:+12795290731" className="rounded-full bg-[#140d23] px-8 py-3 text-base font-semibold text-white transition hover:bg-black">
+        <div className="relative mx-auto max-w-4xl text-center" data-reveal>
+          <p className="reveal text-sm font-semibold uppercase tracking-[0.2em] text-white/70 mb-6">
+            Ready
+          </p>
+          <h2 className="reveal font-display text-4xl sm:text-5xl lg:text-6xl text-white leading-[0.95]">
+            Build better friendship follow-through with one text.
+          </h2>
+          <p className="reveal mt-6 max-w-2xl mx-auto text-lg text-white/80 leading-relaxed" style={{ transitionDelay: "100ms" }}>
+            Nell is live in early access. Start the thread and let memory run in the background.
+          </p>
+
+          <div className="reveal mt-10" style={{ transitionDelay: "200ms" }}>
+            <a
+              href="sms:+12795290731"
+              className="inline-block bg-[#1a1a2e] text-white px-10 py-4 rounded-full font-semibold text-lg hover:bg-black transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+            >
               Text Nell at (279) 529-0731
             </a>
-            <span className="rounded-full border border-white/35 bg-white/10 px-4 py-2 text-sm text-[#ffeaf8]">No app install required</span>
           </div>
+          <p className="reveal mt-5 text-sm text-white/60" style={{ transitionDelay: "300ms" }}>
+            No app install required
+          </p>
         </div>
       </section>
     </Layout>

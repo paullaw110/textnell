@@ -7,20 +7,20 @@ interface LayoutProps {
 
 export default function Layout({ children, showNavigation = true }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-[#FFF8F0] text-[#1a1a2e] relative overflow-x-hidden">
+    <div className="grain min-h-screen bg-[#FFF8F0] text-[#1a1a2e] relative overflow-x-hidden">
       {showNavigation && (
-        <nav className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-[#e5e7eb] shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
+        <nav className="fixed top-0 left-0 right-0 z-50 mix-blend-normal">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            <div className="flex justify-between items-center h-20">
               <Link
                 href="/"
-                className="text-2xl font-display font-bold text-[#1a1a2e] hover:text-[#ff6b4a] transition-colors"
+                className="font-display text-2xl text-[#1a1a2e] hover:text-[#ff6b4a] transition-colors duration-300"
               >
-                Nell
+                nell
               </Link>
               <a
                 href="sms:+12795290731"
-                className="bg-[#ff6b4a] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#e55a3a] transition-all shadow-lg text-sm btn-bounce"
+                className="bg-[#1a1a2e] text-[#FFF8F0] px-6 py-2.5 rounded-full font-medium hover:bg-[#ff6b4a] transition-all duration-300 text-sm tracking-wide"
               >
                 Text Nell →
               </a>
@@ -31,19 +31,24 @@ export default function Layout({ children, showNavigation = true }: LayoutProps)
 
       <main className="flex-1 relative z-10">{children}</main>
 
-      <footer className="bg-white border-t border-[#e5e7eb] relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <Link href="/" className="text-xl font-display font-bold text-[#1a1a2e]">
-              Nell
-            </Link>
-            <div className="flex gap-6 text-sm">
-              <Link href="/privacy" className="text-[#6b7280] hover:text-[#1a1a2e] transition-colors">Privacy</Link>
-              <Link href="/terms" className="text-[#6b7280] hover:text-[#1a1a2e] transition-colors">Terms</Link>
+      <footer className="border-t border-[#e8e0d8] relative z-10 bg-[#FFF8F0]">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-16">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+            <div>
+              <Link href="/" className="font-display text-3xl text-[#1a1a2e]">
+                nell
+              </Link>
+              <p className="mt-3 text-sm text-[#9a918a] max-w-xs leading-relaxed">
+                Made with 💛 for people who give a damn about their people.
+              </p>
             </div>
-            <div className="text-sm text-[#6b7280]">
-              Made with 💛 for people who give a damn about their people. · © 2026 Nell
+            <div className="flex gap-8 text-sm">
+              <Link href="/privacy" className="text-[#9a918a] hover:text-[#1a1a2e] transition-colors duration-300">Privacy</Link>
+              <Link href="/terms" className="text-[#9a918a] hover:text-[#1a1a2e] transition-colors duration-300">Terms</Link>
             </div>
+          </div>
+          <div className="mt-12 pt-8 border-t border-[#e8e0d8] text-xs text-[#9a918a]">
+            © 2026 Nell
           </div>
         </div>
       </footer>
