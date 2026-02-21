@@ -102,6 +102,22 @@ export const giftCatalog = sqliteTable('gift_catalog', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
 });
 
+// ============================================
+// Gift Research Queue (event-driven catalog gaps)
+// ============================================
+
+export const giftResearchQueue = sqliteTable('gift_research_queue', {
+  id: text('id').primaryKey(),
+  category: text('category').notNull(),
+  subcategory: text('subcategory'),
+  contactId: text('contact_id').references(() => contacts.id),
+  deadline: text('deadline'),                    // YYYY-MM-DD (birthday/occasion date)
+  status: text('status').notNull().default('pending'), // pending | researching | complete | skipped
+  currentCount: integer('current_count').default(0),   // how many products existed when queued
+  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   contacts: many(contacts),

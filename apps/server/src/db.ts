@@ -1,7 +1,7 @@
 import { eq, and, like, desc, sql, lte, gte } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db, schema } from './lib/db';
-const { users, contacts, interests, occasions, reminders, messages, giftHistory, giftCatalog } = schema;
+const { users, contacts, interests, occasions, reminders, messages, giftHistory, giftCatalog, giftResearchQueue } = schema;
 
 // ============================================
 // Users
@@ -301,6 +301,74 @@ export async function getAllGiftCategories() {
     .where(eq(giftCatalog.inStock, 1))
     .groupBy(giftCatalog.category);
   return rows.map(r => r.category);
+}
+
+// ============================================
+// Gift Research Queue
+// ============================================
+
+export async function checkAndQueueGiftGaps(contactId: string, category: string, subcategory?: string) {
+  // Count existing products for this category
+  const existing = await db.select({ count: sql<number>`count(*)` })
+    .from(giftCatalog)
+    .where(and(eq(giftCatalog.category, category.toLowerCase()), eq(giftCatalog.inStock, 1)));
+  
+  const count = existing[0]?.count || 0;
+  
+  if (count >= 3) return null; // enough products, no gap
+  
+  // Check if already queued for this category
+  const alreadyQueued = await db.select().from(giftResearchQueue)
+    .where(and(
+      eq(giftResearchQueue.category, category.toLowerCase()),
+      eq(giftResearchQueue.status, 'pending')
+    )).limit(1);
+  
+  if (alreadyQueued.length > 0) return null; // already in queue
+  
+  // Find the nearest deadline (birthday/occasion) for this contact
+  const contactOccasions = await db.select().from(occasions)
+    .where(eq(occasions.contactId, contactId));
+  
+  let deadline: string | null = null;
+  if (contactOccasions.length > 0) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    let nearest: Date | null = null;
+    for (const occ of contactOccasions) {
+      const [month, day] = occ.date.split('-').map(Number);
+      let occDate = new Date(currentYear, month - 1, day);
+      if (occDate < today) occDate = new Date(currentYear + 1, month - 1, day);
+      if (!nearest || occDate < nearest) nearest = occDate;
+    }
+    if (nearest) deadline = nearest.toISOString().split('T')[0];
+  }
+  
+  const id = nanoid();
+  const result = await db.insert(giftResearchQueue).values({
+    id,
+    category: category.toLowerCase(),
+    subcategory: subcategory?.toLowerCase(),
+    contactId,
+    deadline,
+    status: 'pending',
+    currentCount: count,
+  }).returning();
+  
+  return result[0];
+}
+
+export async function getPendingResearch() {
+  return db.select().from(giftResearchQueue)
+    .where(eq(giftResearchQueue.status, 'pending'))
+    .orderBy(giftResearchQueue.deadline); // nearest deadlines first
+}
+
+export async function markResearchComplete(id: string) {
+  return db.update(giftResearchQueue)
+    .set({ status: 'complete', completedAt: new Date() })
+    .where(eq(giftResearchQueue.id, id));
 }
 
 export async function getAllInterestCategories() {

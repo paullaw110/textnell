@@ -4,7 +4,7 @@ import {
   addInterest, getInterests, addOccasion, getUpcomingOccasions,
   addMessage, getRecentMessages, addGiftRecord, getGiftHistory,
   updateUserPreferences, getAllContacts, getOrCreateUser,
-  searchGifts,
+  searchGifts, checkAndQueueGiftGaps,
 } from './db';
 import dotenv from 'dotenv';
 
@@ -202,6 +202,7 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
         const existing = await getContact(userId, input.name);
         if (existing) return JSON.stringify({ status: 'exists', contact: existing });
         const contact = await createContact(userId, { name: input.name, birthday: input.birthday, relationship: input.relationship } as any);
+        // If notes contain interest hints, Gemini will call add_interest separately — gap detection happens there
         return JSON.stringify({ status: 'created', contact });
       }
       case 'get_contact': {
@@ -228,6 +229,11 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
         const contact = await getContact(userId, input.name);
         if (!contact) return JSON.stringify({ status: 'not_found', name: input.name });
         await addInterest(contact.id, input.category, input.specifics, 'user_stated');
+        // Check gift catalog gaps — queue research if <3 products for this category
+        const gap = await checkAndQueueGiftGaps(contact.id, input.category, input.specifics);
+        if (gap) {
+          console.log(`Gift gap detected: "${input.category}" has <3 products. Queued research (deadline: ${gap.deadline || 'none'}).`);
+        }
         return JSON.stringify({ status: 'added', interest: { category: input.category, specifics: input.specifics } });
       }
       case 'add_occasion': {

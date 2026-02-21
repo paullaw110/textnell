@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import dotenv from 'dotenv';
-import { getOrCreateUser, addMessage } from './db';
-import { chat } from './conversation';
+import { getOrCreateUser, addMessage, getPendingResearch, getGiftCatalogStats } from './db';
+import { chatGemini as chat } from './conversation-gemini';
 import { chatGemini } from './conversation-gemini';
 import { sendSMS } from './twilio-client';
 import { startReminderScheduler, testReminderCheck } from './reminders';
@@ -466,6 +466,20 @@ app.get('/test-reminders', async (c) => {
   } catch (error) {
     console.error('Test reminder error:', error);
     return c.text('Test reminder check failed', 500);
+  }
+});
+
+// ============================================
+// Gift Research Queue API
+// ============================================
+
+app.get('/api/gift-gaps', async (c) => {
+  try {
+    const pending = await getPendingResearch();
+    const stats = await getGiftCatalogStats();
+    return c.json({ pending, catalogStats: stats });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
   }
 });
 
