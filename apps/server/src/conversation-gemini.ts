@@ -170,13 +170,14 @@ const toolDeclarations: any[] = [
   },
   {
     name: 'search_gifts',
-    description: 'Search the curated gift database by interest category. Returns real products with prices and purchase links. Use when suggesting gifts for a contact based on their interests.',
+    description: 'Search the curated gift database by interest category. Returns real products with prices and purchase links. Use when suggesting gifts for a contact based on their interests. Always pass contactName if you know who the gift is for.',
     parameters: {
       type: "OBJECT",
       properties: {
-        category: { type: "STRING", description: 'Interest category to search (e.g. spirits, hiking, yoga, cooking, gaming)' },
-        subcategory: { type: "STRING", description: 'Optional subcategory (e.g. bourbon, scotch for spirits)' },
+        category: { type: "STRING", description: 'Interest or hobby to search for (e.g. bourbon, pickleball, yoga, photography, cooking). Be specific — "bourbon" is better than "spirits".' },
+        subcategory: { type: "STRING", description: 'Optional further specificity (e.g. mezcal, espresso)' },
         priceRange: { type: "STRING", description: 'Optional: budget (~$25), mid (~$50), or premium (~$100+)' },
+        contactName: { type: "STRING", description: 'Name of the contact the gift is for (helps improve future recommendations)' },
       },
       required: ['category'],
     },
@@ -260,13 +261,20 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
         return JSON.stringify({ status: 'updated', days: input.days });
       }
       case 'search_gifts': {
+        // Try to find the contact for gap detection on misses
+        let contactId: string | undefined;
+        if (input.contactName) {
+          const c = await getContact(userId, input.contactName);
+          if (c) contactId = c.id;
+        }
         const results = await searchGifts(input.category, {
           subcategory: input.subcategory,
           priceRange: input.priceRange,
           limit: 5,
+          contactId,
         });
         if (results.length === 0) {
-          return JSON.stringify({ status: 'no_results', category: input.category, message: 'No gifts found for this category yet.' });
+          return JSON.stringify({ status: 'no_results', category: input.category, message: 'No gifts found for this category yet. I\'ve flagged it — check back soon.' });
         }
         return JSON.stringify({
           status: 'ok',

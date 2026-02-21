@@ -228,18 +228,64 @@ export async function getGiftHistory(contactId: string) {
 // Gift Catalog
 // ============================================
 
-export async function searchGifts(category: string, options?: { subcategory?: string; priceRange?: string; limit?: number }) {
-  const conditions = [eq(giftCatalog.category, category.toLowerCase()), eq(giftCatalog.inStock, 1)];
-  if (options?.subcategory) {
-    conditions.push(like(giftCatalog.subcategory, `%${options.subcategory.toLowerCase()}%`));
-  }
-  if (options?.priceRange) {
-    conditions.push(eq(giftCatalog.priceRange, options.priceRange));
-  }
-  return db.select().from(giftCatalog)
-    .where(and(...conditions))
+export async function searchGifts(category: string, options?: { subcategory?: string; priceRange?: string; limit?: number; contactId?: string }) {
+  const term = category.toLowerCase();
+  const sub = options?.subcategory?.toLowerCase();
+  const lim = options?.limit || 5;
+  const stockFilter = eq(giftCatalog.inStock, 1);
+  const priceFilter = options?.priceRange ? eq(giftCatalog.priceRange, options.priceRange) : undefined;
+
+  const baseConditions = priceFilter ? [stockFilter, priceFilter] : [stockFilter];
+
+  // 1. Exact category match
+  let results = await db.select().from(giftCatalog)
+    .where(and(...baseConditions, eq(giftCatalog.category, term)))
     .orderBy(desc(giftCatalog.giftability))
-    .limit(options?.limit || 5);
+    .limit(lim);
+
+  // 2. Exact subcategory match (e.g., "bourbon" stored as subcategory under "spirits")
+  if (results.length === 0) {
+    results = await db.select().from(giftCatalog)
+      .where(and(...baseConditions, eq(giftCatalog.subcategory, term)))
+      .orderBy(desc(giftCatalog.giftability))
+      .limit(lim);
+  }
+
+  // 3. Fuzzy match — term appears anywhere in category, subcategory, or tags
+  if (results.length === 0) {
+    results = await db.select().from(giftCatalog)
+      .where(and(...baseConditions, sql`(
+        ${giftCatalog.category} LIKE ${'%' + term + '%'}
+        OR ${giftCatalog.subcategory} LIKE ${'%' + term + '%'}
+        OR ${giftCatalog.tags} LIKE ${'%' + term + '%'}
+        OR ${giftCatalog.name} LIKE ${'%' + term + '%'}
+      )`))
+      .orderBy(desc(giftCatalog.giftability))
+      .limit(lim);
+  }
+
+  // 4. If subcategory provided and no results yet, try subcategory as fuzzy
+  if (results.length === 0 && sub) {
+    results = await db.select().from(giftCatalog)
+      .where(and(...baseConditions, sql`(
+        ${giftCatalog.category} LIKE ${'%' + sub + '%'}
+        OR ${giftCatalog.subcategory} LIKE ${'%' + sub + '%'}
+        OR ${giftCatalog.tags} LIKE ${'%' + sub + '%'}
+        OR ${giftCatalog.name} LIKE ${'%' + sub + '%'}
+      )`))
+      .orderBy(desc(giftCatalog.giftability))
+      .limit(lim);
+  }
+
+  // 5. No results at all — queue gap research if we have a contactId
+  if (results.length === 0 && options?.contactId) {
+    const gap = await checkAndQueueGiftGaps(options.contactId, term, sub);
+    if (gap) {
+      console.log(`Gift search miss → queued research: "${term}" (deadline: ${gap.deadline || 'none'})`);
+    }
+  }
+
+  return results;
 }
 
 export async function addGiftCatalogItem(item: {
@@ -247,6 +293,23 @@ export async function addGiftCatalogItem(item: {
   priceRange: string; priceEstimate?: number; affiliateUrl?: string; purchaseUrl?: string;
   source: string; giftability?: number; tags?: string[]; imageUrl?: string;
 }) {
+  // Dedup: check if product with same name + category already exists
+  const existing = await db.select({ id: giftCatalog.id }).from(giftCatalog)
+    .where(and(
+      eq(giftCatalog.name, item.name),
+      eq(giftCatalog.category, item.category.toLowerCase())
+    )).limit(1);
+  if (existing.length > 0) {
+    // Update instead of duplicate
+    return db.update(giftCatalog).set({
+      priceEstimate: item.priceEstimate,
+      purchaseUrl: item.purchaseUrl,
+      affiliateUrl: item.affiliateUrl,
+      description: item.description,
+      lastVerified: new Date(),
+      updatedAt: new Date(),
+    }).where(eq(giftCatalog.id, existing[0].id)).returning();
+  }
   const id = nanoid();
   return db.insert(giftCatalog).values({
     id,
@@ -324,7 +387,32 @@ export async function checkAndQueueGiftGaps(contactId: string, category: string,
       eq(giftResearchQueue.status, 'pending')
     )).limit(1);
   
-  if (alreadyQueued.length > 0) return null; // already in queue
+  if (alreadyQueued.length > 0) {
+    // Update deadline if this contact has an earlier one
+    const contactOccasions = await db.select().from(occasions)
+      .where(eq(occasions.contactId, contactId));
+    if (contactOccasions.length > 0) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      let nearest: Date | null = null;
+      for (const occ of contactOccasions) {
+        const [month, day] = occ.date.split('-').map(Number);
+        let occDate = new Date(currentYear, month - 1, day);
+        if (occDate < today) occDate = new Date(currentYear + 1, month - 1, day);
+        if (!nearest || occDate < nearest) nearest = occDate;
+      }
+      if (nearest) {
+        const newDeadline = nearest.toISOString().split('T')[0];
+        const existing = alreadyQueued[0];
+        if (!existing.deadline || newDeadline < existing.deadline) {
+          await db.update(giftResearchQueue)
+            .set({ deadline: newDeadline })
+            .where(eq(giftResearchQueue.id, existing.id));
+        }
+      }
+    }
+    return null;
+  }
   
   // Find the nearest deadline (birthday/occasion) for this contact
   const contactOccasions = await db.select().from(occasions)
