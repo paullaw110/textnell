@@ -233,7 +233,18 @@ export async function searchGifts(category: string, options?: { subcategory?: st
   const sub = options?.subcategory?.toLowerCase();
   const lim = options?.limit || 5;
   const stockFilter = eq(giftCatalog.inStock, 1);
-  const priceFilter = options?.priceRange ? eq(giftCatalog.priceRange, options.priceRange) : undefined;
+
+  // Normalize price range — Gemini might send "~$25", "$50", "budget", "under 30", etc.
+  let normalizedPrice: string | undefined;
+  if (options?.priceRange) {
+    const p = options.priceRange.toLowerCase().replace(/[~$,]/g, '');
+    const num = parseInt(p.replace(/\D/g, ''));
+    if (p.includes('budget') || p.includes('cheap') || (num && num <= 35)) normalizedPrice = 'budget';
+    else if (p.includes('mid') || p.includes('medium') || (num && num <= 75)) normalizedPrice = 'mid';
+    else if (p.includes('premium') || p.includes('luxury') || p.includes('high') || (num && num > 75)) normalizedPrice = 'premium';
+    else normalizedPrice = p; // fallback to raw
+  }
+  const priceFilter = normalizedPrice ? eq(giftCatalog.priceRange, normalizedPrice) : undefined;
 
   const baseConditions = priceFilter ? [stockFilter, priceFilter] : [stockFilter];
 
@@ -277,7 +288,13 @@ export async function searchGifts(category: string, options?: { subcategory?: st
       .limit(lim);
   }
 
-  // 5. No results at all — queue gap research if we have a contactId
+  // 5. If price filter produced no results, retry without it
+  if (results.length === 0 && priceFilter) {
+    results = await searchGifts(category, { ...options, priceRange: undefined });
+    return results; // skip gap queue — we have products, just not at that price
+  }
+
+  // 6. No results at all — queue gap research if we have a contactId
   if (results.length === 0 && options?.contactId) {
     const gap = await checkAndQueueGiftGaps(options.contactId, term, sub);
     if (gap) {
