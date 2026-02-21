@@ -109,13 +109,13 @@ const toolDeclarations: any[] = [
   },
   {
     name: 'add_interest',
-    description: 'Add a structured interest to a contact',
+    description: 'Add a structured interest to a contact. Use a specific but consistent category name. Common categories: spirits, cooking, outdoors, fitness, gaming, reading, tech, music, art, gardening, pets, home_decor, fashion, travel, photography, sports, beauty, film, crafts, cars, cycling, running, yoga, climbing, surfing, skiing, golf, tennis, pickleball, fishing, camping, coffee, wine, beer, baking. Use these when they fit. For new/niche interests, use a lowercase_underscore name that\'s specific (e.g. "board_games" not "games", "bourbon" not "drinks"). Put the rich detail in specifics.',
     parameters: {
       type: "OBJECT",
       properties: {
         name: { type: "STRING", description: 'Contact name' },
-        category: { type: "STRING", description: 'Interest category' },
-        specifics: { type: "STRING", description: 'Specific interest' },
+        category: { type: "STRING", description: 'Interest category (lowercase_underscore, specific but consistent)' },
+        specifics: { type: "STRING", description: 'Specific details — the richer the better. "loves Woodford Reserve, has a home bar, prefers neat" not just "bourbon"' },
       },
       required: ['name', 'category', 'specifics'],
     },
