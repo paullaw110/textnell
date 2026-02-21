@@ -313,18 +313,23 @@ export async function chatGemini(userId: string, userMessage: string): Promise<s
     parts: [{ text: msg.content }],
   }));
 
+  // Inject current date so Nell can resolve "tomorrow", "next week", etc.
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' });
+  const dynamicPrompt = SYSTEM_PROMPT + `\n\n## Current date\nToday is ${dateStr}. Use this to resolve relative dates like "tomorrow", "next week", "this Saturday", etc. Convert them to MM-DD format before calling tools.`;
+
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.0-flash',
-    systemInstruction: SYSTEM_PROMPT,
+    systemInstruction: dynamicPrompt,
     tools: [{ functionDeclarations: toolDeclarations }],
   });
 
   const chatSession = model.startChat({ history });
   let response = await chatSession.sendMessage(userMessage);
 
-  // Handle tool calls (max 3 iterations)
+  // Handle tool calls (max 5 iterations)
   let iterations = 0;
-  while (iterations < 3) {
+  while (iterations < 5) {
     const candidate = response.response.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const functionCalls = parts.filter((p: any) => p.functionCall);
@@ -350,6 +355,23 @@ export async function chatGemini(userId: string, userMessage: string): Promise<s
   }
 
   // Extract text
+  const finalCandidate = response.response.candidates?.[0];
+  if (!finalCandidate?.content?.parts?.some((p: any) => p.text)) {
+    console.log('Gemini returned no text parts. Candidate:', JSON.stringify(finalCandidate?.content?.parts?.map((p: any) => Object.keys(p))));
+    // If tools ran successfully but Gemini didn't generate text, nudge it
+    if (iterations > 0) {
+      try {
+        const nudge = await chatSession.sendMessage('Please confirm what you just did in a brief response.');
+        const nudgeText = nudge.response.candidates?.[0]?.content?.parts
+          ?.filter((p: any) => p.text)
+          ?.map((p: any) => p.text)
+          ?.join('');
+        if (nudgeText) return nudgeText;
+      } catch (e) {
+        console.error('Nudge failed:', e);
+      }
+    }
+  }
   const text = response.response.candidates?.[0]?.content?.parts
     ?.filter((p: any) => p.text)
     ?.map((p: any) => p.text)
