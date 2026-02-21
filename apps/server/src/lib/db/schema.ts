@@ -78,6 +78,30 @@ export const giftHistory = sqliteTable('gift_history', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
 });
 
+// ============================================
+// Gift Catalog (curated product database)
+// ============================================
+
+export const giftCatalog = sqliteTable('gift_catalog', {
+  id: text('id').primaryKey(),
+  category: text('category').notNull(),        // matches interest categories: spirits, hiking, yoga, etc.
+  subcategory: text('subcategory'),             // bourbon, scotch, tequila, etc.
+  name: text('name').notNull(),                 // "Woodford Reserve Double Oaked"
+  description: text('description').notNull(),   // Nell-voice description
+  priceRange: text('price_range').notNull(),    // "budget" | "mid" | "premium"
+  priceEstimate: real('price_estimate'),        // ~55.00
+  affiliateUrl: text('affiliate_url'),          // Amazon affiliate link
+  purchaseUrl: text('purchase_url'),            // Direct product URL (fallback)
+  source: text('source').notNull(),             // "wirecutter" | "strategist" | "reddit" | "amazon_bestseller" | "manual"
+  giftability: integer('giftability'),          // 1-5 score (packaging, presentation)
+  tags: text('tags'),                           // JSON array: ["crowd-pleaser", "unique", "personalized"]
+  imageUrl: text('image_url'),
+  inStock: integer('in_stock').default(1),      // 0 = out of stock
+  lastVerified: integer('last_verified', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   contacts: many(contacts),

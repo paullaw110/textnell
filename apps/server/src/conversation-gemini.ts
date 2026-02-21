@@ -4,6 +4,7 @@ import {
   addInterest, getInterests, addOccasion, getUpcomingOccasions,
   addMessage, getRecentMessages, addGiftRecord, getGiftHistory,
   updateUserPreferences, getAllContacts, getOrCreateUser,
+  searchGifts,
 } from './db';
 import dotenv from 'dotenv';
 
@@ -30,7 +31,7 @@ Core traits:
 
 Adding someone: "Sarah. March 15. Noted." / "Got it. Jake likes bourbon — useful come July."
 Reminders: "Jake's birthday is Saturday. He's into bourbon — want gift ideas or are you handling it?"
-Gift ideas: 2-3 specific products with prices. Add opinion: "The hiking socks are the safe bet. The whiskey stones are if you want to look like you tried harder than you did."
+Gift ideas: ALWAYS use search_gifts tool first to find real products from the curated database. Present 2-3 with prices and links. Add your opinion: "The hiking socks are the safe bet. The whiskey stones are if you want to look like you tried harder than you did." If the database has no results for a category, say so honestly and suggest they check back later.
 Message drafts: Casual, natural. "Happy birthday dude, hope it's a good one. Overdue for a hike when you're free."
 When thanked: "That's what I'm here for." or just move on.
 Off-topic: "I'm flattered but I really only do the people-remembering thing. Very niche."
@@ -168,6 +169,19 @@ const toolDeclarations: any[] = [
     },
   },
   {
+    name: 'search_gifts',
+    description: 'Search the curated gift database by interest category. Returns real products with prices and purchase links. Use when suggesting gifts for a contact based on their interests.',
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        category: { type: "STRING", description: 'Interest category to search (e.g. spirits, hiking, yoga, cooking, gaming)' },
+        subcategory: { type: "STRING", description: 'Optional subcategory (e.g. bourbon, scotch for spirits)' },
+        priceRange: { type: "STRING", description: 'Optional: budget (~$25), mid (~$50), or premium (~$100+)' },
+      },
+      required: ['category'],
+    },
+  },
+  {
     name: 'delete_contact',
     description: 'Remove a contact',
     parameters: {
@@ -238,6 +252,27 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
       case 'set_reminder_days': {
         await updateUserPreferences(userId, { reminderDaysDefault: input.days });
         return JSON.stringify({ status: 'updated', days: input.days });
+      }
+      case 'search_gifts': {
+        const results = await searchGifts(input.category, {
+          subcategory: input.subcategory,
+          priceRange: input.priceRange,
+          limit: 5,
+        });
+        if (results.length === 0) {
+          return JSON.stringify({ status: 'no_results', category: input.category, message: 'No gifts found for this category yet.' });
+        }
+        return JSON.stringify({
+          status: 'ok',
+          gifts: results.map(g => ({
+            name: g.name,
+            description: g.description,
+            price: g.priceEstimate ? `~$${g.priceEstimate}` : g.priceRange,
+            url: g.affiliateUrl || g.purchaseUrl || null,
+            source: g.source,
+            tags: g.tags ? JSON.parse(g.tags) : [],
+          })),
+        });
       }
       case 'delete_contact': {
         const contact = await getContact(userId, input.name);

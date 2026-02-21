@@ -1,7 +1,7 @@
 import { eq, and, like, desc, sql, lte, gte } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db, schema } from './lib/db';
-const { users, contacts, interests, occasions, reminders, messages, giftHistory } = schema;
+const { users, contacts, interests, occasions, reminders, messages, giftHistory, giftCatalog } = schema;
 
 // ============================================
 // Users
@@ -222,4 +222,90 @@ export async function addGiftRecord(userId: string, contactId: string, data: { d
 
 export async function getGiftHistory(contactId: string) {
   return db.select().from(giftHistory).where(eq(giftHistory.contactId, contactId)).orderBy(desc(giftHistory.createdAt));
+}
+
+// ============================================
+// Gift Catalog
+// ============================================
+
+export async function searchGifts(category: string, options?: { subcategory?: string; priceRange?: string; limit?: number }) {
+  const conditions = [eq(giftCatalog.category, category.toLowerCase()), eq(giftCatalog.inStock, 1)];
+  if (options?.subcategory) {
+    conditions.push(like(giftCatalog.subcategory, `%${options.subcategory.toLowerCase()}%`));
+  }
+  if (options?.priceRange) {
+    conditions.push(eq(giftCatalog.priceRange, options.priceRange));
+  }
+  return db.select().from(giftCatalog)
+    .where(and(...conditions))
+    .orderBy(desc(giftCatalog.giftability))
+    .limit(options?.limit || 5);
+}
+
+export async function addGiftCatalogItem(item: {
+  category: string; subcategory?: string; name: string; description: string;
+  priceRange: string; priceEstimate?: number; affiliateUrl?: string; purchaseUrl?: string;
+  source: string; giftability?: number; tags?: string[]; imageUrl?: string;
+}) {
+  const id = nanoid();
+  return db.insert(giftCatalog).values({
+    id,
+    category: item.category.toLowerCase(),
+    subcategory: item.subcategory?.toLowerCase(),
+    name: item.name,
+    description: item.description,
+    priceRange: item.priceRange,
+    priceEstimate: item.priceEstimate,
+    affiliateUrl: item.affiliateUrl,
+    purchaseUrl: item.purchaseUrl,
+    source: item.source,
+    giftability: item.giftability || 3,
+    tags: item.tags ? JSON.stringify(item.tags) : null,
+    imageUrl: item.imageUrl,
+    inStock: 1,
+    lastVerified: new Date(),
+  }).returning();
+}
+
+export async function updateGiftCatalogItem(id: string, updates: Partial<{
+  priceEstimate: number; affiliateUrl: string; inStock: number; lastVerified: Date; description: string;
+}>) {
+  return db.update(giftCatalog)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(giftCatalog.id, id))
+    .returning();
+}
+
+export async function getGiftCatalogStats() {
+  const all = await db.select({
+    category: giftCatalog.category,
+    count: sql<number>`count(*)`,
+  }).from(giftCatalog)
+    .where(eq(giftCatalog.inStock, 1))
+    .groupBy(giftCatalog.category);
+  return all;
+}
+
+export async function getStaleGifts(daysOld: number = 90) {
+  const cutoff = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000);
+  return db.select().from(giftCatalog)
+    .where(and(
+      eq(giftCatalog.inStock, 1),
+      lte(giftCatalog.lastVerified, cutoff)
+    ));
+}
+
+export async function getAllGiftCategories() {
+  const rows = await db.select({ category: giftCatalog.category })
+    .from(giftCatalog)
+    .where(eq(giftCatalog.inStock, 1))
+    .groupBy(giftCatalog.category);
+  return rows.map(r => r.category);
+}
+
+export async function getAllInterestCategories() {
+  const rows = await db.select({ category: interests.category })
+    .from(interests)
+    .groupBy(interests.category);
+  return rows.map(r => r.category);
 }
