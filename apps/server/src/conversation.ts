@@ -53,10 +53,12 @@ Forgotten birthday: No guilt. "That one slipped. Want me to draft a belated text
 - Over-explain or pad responses with filler
 - Use: "No worries!", "Of course!", "Sure thing!", "Happy to help!"
 
-## Important reminders
-- STAY IN CHARACTER. You are Nell. Dry, deadpan, efficient. Do NOT say "I'm happy to help", "Let me know if you need anything", "Just let me know". These are banned.
-- Keep responses to 1-3 sentences max. This is SMS.
-- When the gift database has no results, say so briefly: "Nothing in the database for that yet. Check back soon." Don't make up generic suggestions.
+## STRICT RULES (never break these)
+1. STAY IN CHARACTER. You are Nell. Dry, deadpan, efficient. 
+2. BANNED PHRASES: "I'm happy to help", "Let me know if you need anything", "Just let me know", "I'd be happy to", "Let me know if you need any other suggestions", "Here are some general ideas". If you catch yourself writing these, delete them.
+3. MAX 1-3 SENTENCES. This is SMS. Every response must be short enough to read in 5 seconds. If your response is longer than 3 sentences, cut it down.
+4. NEVER HALLUCINATE PRODUCTS. If search_gifts returns no results, say "Nothing in the database for [category] yet. Working on it." Do NOT make up products, prices, or suggestions. Do NOT list generic ideas. Just be honest that you don't have recommendations yet.
+5. When you don't know something, say so in one sentence. Don't fill space.
 
 ## Tools
 You have tools to manage contacts, birthdays, interests, occasions, and gifts. Use them when appropriate — add/update/delete contacts, track interests, add occasions, log gifts, get summaries, change preferences, list upcoming occasions, search gift database.
@@ -323,7 +325,7 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
           contactId,
         });
         if (results.length === 0) {
-          return JSON.stringify({ status: 'no_results', category: input.category, message: 'No gifts found for this category yet. I\'ve flagged it — check back soon.' });
+          return JSON.stringify({ status: 'no_results', category: input.category, message: 'No gifts in the database for this category yet. IMPORTANT: Do NOT suggest any products. Do NOT make up gift ideas. Just tell the user there are no recommendations for this category yet and you are working on it. Keep it to one sentence.' });
         }
         return JSON.stringify({
           status: 'ok',
@@ -420,6 +422,21 @@ export async function chat(userId: string, userMessage: string): Promise<string>
   }
 
   // Extract text response
-  const textBlock = response.content.find(b => b.type === 'text');
-  return textBlock?.type === 'text' ? textBlock.text : "Sorry, I couldn't process that. Try again?";
+  let textBlock = response.content.find(b => b.type === 'text');
+  let reply = textBlock?.type === 'text' ? textBlock.text : "Sorry, I couldn't process that. Try again?";
+  
+  // Enforce brevity — if response is too long, it's not Nell
+  if (reply.length > 300) {
+    // Take first 2 sentences
+    const sentences = reply.match(/[^.!?]+[.!?]+/g) || [reply];
+    reply = sentences.slice(0, 2).join('').trim();
+  }
+  
+  // Kill banned phrases
+  reply = reply.replace(/Let me know if you need any(thing| other suggestions)[.!]?/gi, '').trim();
+  reply = reply.replace(/I'?d be happy to[^.]*\./gi, '').trim();
+  reply = reply.replace(/I'm happy to[^.]*\./gi, '').trim();
+  reply = reply.replace(/Just let me know[^.]*[.!]?/gi, '').trim();
+  
+  return reply;
 }
