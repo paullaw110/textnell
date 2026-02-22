@@ -70,7 +70,9 @@ Context: "update it" or "yes" — use conversation history.
 Birthday format: MM-DD.
 - For interests, use specific but consistent category names. Common categories: spirits, cooking, outdoors, fitness, gaming, reading, tech, music, art, gardening, pets, home_decor, fashion, travel, photography, sports, beauty, film, crafts, cars, cycling, running, yoga, climbing, surfing, skiing, golf, tennis, pickleball, fishing, camping, coffee, wine, beer, baking. Use these when they fit. For new/niche interests, use a lowercase_underscore name that's specific (e.g. "board_games" not "games", "bourbon" not "drinks"). Put the rich detail in specifics.
 
-CRITICAL: When the user gives you enough info to add a contact (name + birthday), you MUST call the add_contact tool. Same for add_interest — if the user mentions an interest, call the tool. Never pretend you did something you didn't.`;
+CRITICAL: When the user gives you enough info to add a contact (name + birthday), you MUST call the add_contact tool. Same for add_interest — if the user mentions an interest, call the tool. Never pretend you did something you didn't.
+
+When the user provides a name for a contact you're building (e.g. "their name is Jeff" or just "Jeff" after you asked), just save the name and confirm. Do NOT re-search gifts or repeat previous results. One sentence: "Jeff. Got it." Then stop.`;
 
 const tools: Anthropic.Messages.Tool[] = [
   {
