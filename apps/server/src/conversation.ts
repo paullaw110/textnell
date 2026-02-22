@@ -72,7 +72,9 @@ Birthday format: MM-DD.
 
 CRITICAL: When the user gives you enough info to add a contact (name + birthday), you MUST call the add_contact tool. Same for add_interest — if the user mentions an interest, call the tool. Never pretend you did something you didn't.
 
-When the user provides a name for a contact you're building (e.g. "their name is Jeff" or just "Jeff" after you asked), just save the name and confirm. Do NOT re-search gifts or repeat previous results. One sentence: "Jeff. Got it." Then stop.`;
+When the user provides a name for a contact you're building (e.g. "their name is Jeff" or just "Jeff" after you asked), just save the name and confirm. Do NOT re-search gifts or repeat previous results. One sentence: "Jeff. Got it." Then stop.
+
+When presenting gift results from search_gifts, ALWAYS include the product URL/link if one is provided. Format: "Product Name (~$XX) — url". When someone asks for a link, provide the URL from the search results you already have. Do NOT repeat the whole recommendation — just give the link.`;
 
 const tools: Anthropic.Messages.Tool[] = [
   {
@@ -228,6 +230,9 @@ const tools: Anthropic.Messages.Tool[] = [
   },
 ];
 
+// Track last gift search results per user for link injection
+const lastGiftResults: Map<string, Array<{name: string; price: string; link: string | null}>> = new Map();
+
 async function executeTool(toolName: string, input: any, userId: string): Promise<string> {
   try {
     switch (toolName) {
@@ -329,16 +334,17 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
         if (results.length === 0) {
           return JSON.stringify({ status: 'no_results', category: input.category, message: 'No gifts in the database for this category yet. IMPORTANT: Do NOT suggest any products. Do NOT make up gift ideas. Just tell the user there are no recommendations for this category yet and you are working on it. Keep it to one sentence.' });
         }
+        const giftData = results.map(g => ({
+          name: g.name,
+          description: g.description,
+          price: g.priceEstimate ? `~$${g.priceEstimate}` : g.priceRange,
+          link: g.affiliateUrl || g.purchaseUrl || null,
+        }));
+        lastGiftResults.set(userId, giftData);
         return JSON.stringify({
           status: 'ok',
-          gifts: results.map(g => ({
-            name: g.name,
-            description: g.description,
-            price: g.priceEstimate ? `~$${g.priceEstimate}` : g.priceRange,
-            url: g.affiliateUrl || g.purchaseUrl || null,
-            source: g.source,
-            tags: g.tags ? JSON.parse(g.tags) : [],
-          })),
+          instruction: 'Present 2-3 of these. Include the link URL for each product.',
+          gifts: giftData,
         });
       }
 
@@ -428,14 +434,40 @@ export async function chat(userId: string, userMessage: string): Promise<string>
   let reply = textBlock?.type === 'text' ? textBlock.text : "Sorry, I couldn't process that. Try again?";
   
   // Enforce brevity — if response is too long, it's not Nell
-  if (reply.length > 300) {
-    // Take first 2 sentences
+  // Allow longer responses if they contain URLs (product links take up space)
+  const maxLength = reply.includes('http') ? 500 : 300;
+  if (reply.length > maxLength) {
+    // Take first 3 sentences, but only complete ones
     const sentences = reply.match(/[^.!?]+[.!?]+/g) || [reply];
-    reply = sentences.slice(0, 2).join('').trim();
+    reply = sentences.slice(0, 3).join('').trim();
+    // Clean trailing fragments — anything after last complete sentence
+    const lastPunctuation = Math.max(reply.lastIndexOf('.'), reply.lastIndexOf('!'), reply.lastIndexOf('?'));
+    if (lastPunctuation > 0) {
+      reply = reply.substring(0, lastPunctuation + 1).trim();
+    }
   }
+  
+  // If we have recent gift results with links but they're not in the reply, append them
+  const gifts = lastGiftResults.get(userId);
+  if (gifts && gifts.length > 0 && !reply.includes('http')) {
+    const links = gifts
+      .filter(g => g.link)
+      .map(g => `${g.name} (${g.price}): ${g.link}`)
+      .join('\n');
+    if (links) {
+      reply = reply + '\n\n' + links;
+    }
+    lastGiftResults.delete(userId); // only inject once
+  }
+  
+  // Kill trailing "else!" and other Haiku artifacts
+  reply = reply.replace(/[\s\n]*else[.!]?\s*$/gi, '').trim();
   
   // Kill banned phrases
   reply = reply.replace(/Let me know if you need any(thing| other suggestions)[.!]?/gi, '').trim();
+  reply = reply.replace(/\n*Does (either|any) of tho(se|em) look good[^?]*\?/gi, '').trim();
+  reply = reply.replace(/\n*(Did|Do) you have (something|anything) else in mind\??/gi, '').trim();
+  reply = reply.replace(/I'll make (a )?note[^.]*\./gi, '').trim();
   reply = reply.replace(/I'?d be happy to[^.]*\./gi, '').trim();
   reply = reply.replace(/I'm happy to[^.]*\./gi, '').trim();
   reply = reply.replace(/Just let me know[^.]*[.!]?/gi, '').trim();
