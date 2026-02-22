@@ -4,6 +4,7 @@ import {
   addInterest, getInterests, addOccasion, getUpcomingOccasions,
   addMessage, getRecentMessages, addGiftRecord, getGiftHistory,
   updateUserPreferences, getAllContacts, getOrCreateUser,
+  searchGifts, checkAndQueueGiftGaps,
 } from './db';
 import dotenv from 'dotenv';
 
@@ -32,7 +33,14 @@ Core traits:
 
 Adding someone: "Sarah. March 15. Noted." / "Got it. Jake likes bourbon — useful come July."
 Reminders: "Jake's birthday is Saturday. He's into bourbon — want gift ideas or are you handling it?"
-Gift ideas: 2-3 specific products with prices. Add opinion: "The hiking socks are the safe bet. The whiskey stones are if you want to look like you tried harder than you did."
+Gift ideas: When someone asks for gift recommendations:
+1. First call get_contact or relationship_summary to look up their stored interests
+2. Then call search_gifts for EACH interest category you find
+3. Present 2-3 best results with prices and links
+4. Add your opinion: "The hiking socks are the safe bet. The whiskey stones are if you want to look like you tried harder than you did."
+5. If the database has no results for a category, say so honestly
+NEVER ask "what are their interests?" if you already have interests stored for that contact. Look them up first.
+If someone adds a contact WITHOUT a birthday, always ask for it after confirming: "Got it. When's their birthday? Makes the gift timing thing actually work."
 Message drafts: Casual, natural. "Happy birthday dude, hope it's a good one. Overdue for a hike when you're free."
 When thanked: "That's what I'm here for." or just move on.
 Off-topic: "I'm flattered but I really only do the people-remembering thing. Very niche."
@@ -45,15 +53,22 @@ Forgotten birthday: No guilt. "That one slipped. Want me to draft a belated text
 - Over-explain or pad responses with filler
 - Use: "No worries!", "Of course!", "Sure thing!", "Happy to help!"
 
+## Important reminders
+- STAY IN CHARACTER. You are Nell. Dry, deadpan, efficient. Do NOT say "I'm happy to help", "Let me know if you need anything", "Just let me know". These are banned.
+- Keep responses to 1-3 sentences max. This is SMS.
+- When the gift database has no results, say so briefly: "Nothing in the database for that yet. Check back soon." Don't make up generic suggestions.
+
 ## Tools
-You have tools to manage contacts, birthdays, interests, occasions, and gifts. Use them when appropriate — add/update/delete contacts, track interests, add occasions, log gifts, get summaries, change preferences, list upcoming occasions.
+You have tools to manage contacts, birthdays, interests, occasions, and gifts. Use them when appropriate — add/update/delete contacts, track interests, add occasions, log gifts, get summaries, change preferences, list upcoming occasions, search gift database.
 
 ## Date parsing
 Flexible: "the 29th" = current or next month. "Feb 6" = 02-06. "July 12th" = 07-12.
 Names: capitalize properly. "charlie" → "Charlie"
 Context: "update it" or "yes" — use conversation history.
 Birthday format: MM-DD.
-- For interests, categorize them into: spirits, outdoors, music, tech, food, sports, books, fashion, gaming, art, travel, etc.`;
+- For interests, use specific but consistent category names. Common categories: spirits, cooking, outdoors, fitness, gaming, reading, tech, music, art, gardening, pets, home_decor, fashion, travel, photography, sports, beauty, film, crafts, cars, cycling, running, yoga, climbing, surfing, skiing, golf, tennis, pickleball, fishing, camping, coffee, wine, beer, baking. Use these when they fit. For new/niche interests, use a lowercase_underscore name that's specific (e.g. "board_games" not "games", "bourbon" not "drinks"). Put the rich detail in specifics.
+
+CRITICAL: When the user gives you enough info to add a contact (name + birthday), you MUST call the add_contact tool. Same for add_interest — if the user mentions an interest, call the tool. Never pretend you did something you didn't.`;
 
 const tools: Anthropic.Messages.Tool[] = [
   {
@@ -183,6 +198,20 @@ const tools: Anthropic.Messages.Tool[] = [
     }
   },
   {
+    name: 'search_gifts',
+    description: 'Search the curated gift database by interest category. Returns real products with prices and purchase links. Always pass contactName if you know who the gift is for.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        category: { type: 'string', description: 'Interest or hobby to search for (e.g. bourbon, pickleball, yoga, photography). Be specific.' },
+        subcategory: { type: 'string', description: 'Optional further specificity (e.g. mezcal, espresso)' },
+        priceRange: { type: 'string', description: 'Optional: budget (~$25), mid (~$50), or premium (~$100+)' },
+        contactName: { type: 'string', description: 'Name of the contact the gift is for (helps improve future recommendations)' },
+      },
+      required: ['category']
+    }
+  },
+  {
     name: 'relationship_summary',
     description: 'Get a full briefing on a contact: birthday, interests, gift history, occasions',
     input_schema: {
@@ -264,6 +293,8 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
         const contact = await getContact(userId, input.name);
         if (!contact) return JSON.stringify({ status: 'not_found', name: input.name });
         const interest = await addInterest(contact.id, input.category, input.specifics);
+        const gap = await checkAndQueueGiftGaps(contact.id, input.category, input.specifics);
+        if (gap) console.log(`Gift gap detected: "${input.category}" has <3 products. Queued research (deadline: ${gap.deadline || 'none'}).`);
         return JSON.stringify({ status: 'added', interest: { category: input.category, specifics: input.specifics } });
       }
 
@@ -277,6 +308,34 @@ async function executeTool(toolName: string, input: any, userId: string): Promis
           notes: input.notes,
         });
         return JSON.stringify({ status: 'logged', gift: { description: input.description, date: input.date_given } });
+      }
+
+      case 'search_gifts': {
+        let contactId: string | undefined;
+        if (input.contactName) {
+          const c = await getContact(userId, input.contactName);
+          if (c) contactId = c.id;
+        }
+        const results = await searchGifts(input.category, {
+          subcategory: input.subcategory,
+          priceRange: input.priceRange,
+          limit: 5,
+          contactId,
+        });
+        if (results.length === 0) {
+          return JSON.stringify({ status: 'no_results', category: input.category, message: 'No gifts found for this category yet. I\'ve flagged it — check back soon.' });
+        }
+        return JSON.stringify({
+          status: 'ok',
+          gifts: results.map(g => ({
+            name: g.name,
+            description: g.description,
+            price: g.priceEstimate ? `~$${g.priceEstimate}` : g.priceRange,
+            url: g.affiliateUrl || g.purchaseUrl || null,
+            source: g.source,
+            tags: g.tags ? JSON.parse(g.tags) : [],
+          })),
+        });
       }
 
       case 'relationship_summary': {
@@ -319,18 +378,23 @@ export async function chat(userId: string, userMessage: string): Promise<string>
   // Add the new user message
   history.push({ role: 'user', content: userMessage });
 
+  // Inject current date for resolving "tomorrow", "next week", etc.
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' });
+  const dynamicPrompt = SYSTEM_PROMPT + `\n\nToday is ${dateStr}. Use this to resolve relative dates like "tomorrow", "next week", "this Saturday". Convert to MM-DD before calling tools.`;
+
   // Call Claude with tools
   let response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-3-haiku-20240307',
     max_tokens: 300,
-    system: SYSTEM_PROMPT,
+    system: dynamicPrompt,
     tools,
     messages: history
   });
 
   // Handle tool use loop (max 3 iterations)
   let iterations = 0;
-  while (response.stop_reason === 'tool_use' && iterations < 3) {
+  while (response.stop_reason === 'tool_use' && iterations < 5) {
     iterations++;
     const toolUseBlocks = response.content.filter(b => b.type === 'tool_use');
     const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
@@ -347,9 +411,9 @@ export async function chat(userId: string, userMessage: string): Promise<string>
     history.push({ role: 'user', content: toolResults });
 
     response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 300,
-      system: SYSTEM_PROMPT,
+      system: dynamicPrompt,
       tools,
       messages: history
     });

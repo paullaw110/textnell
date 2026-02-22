@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import dotenv from 'dotenv';
 import { getOrCreateUser, addMessage, getPendingResearch, getGiftCatalogStats } from './db';
-import { chatGemini as chat } from './conversation-gemini';
+import { chat } from './conversation';
 import { chatGemini } from './conversation-gemini';
 import { sendSMS } from './twilio-client';
 import { startReminderScheduler, testReminderCheck } from './reminders';
