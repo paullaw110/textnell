@@ -13,8 +13,6 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-const TRUST_ITEMS = ["Early Access", "SMS Native", "No App Install", "Personal Memory", "Gift Hints", "Always On"];
-
 const GIFT_POINTS = [
   {
     title: "Personalized picks",
@@ -305,7 +303,7 @@ export default function Home() {
                 See how it works
               </a>
             </div>
-            <p className="text-xs text-[#6b7280]/70 mt-3 max-w-md mx-auto leading-relaxed">
+            <p className="hero-consent" data-reveal>
               By texting Nell, you consent to receive recurring SMS messages. Msg & data rates may apply. Text STOP to cancel, HELP for help.
               {" "}
               <a href="/privacy" className="underline">Privacy Policy</a> · <a href="/terms" className="underline">Terms</a>
@@ -317,16 +315,6 @@ export default function Home() {
           <div className="hero-scroll">
             <span>Scroll</span>
             <ChevronDown size={18} />
-          </div>
-        </section>
-
-        <section className="tag-marquee" aria-label="Feature highlights">
-          <div className="tag-track">
-            {[...TRUST_ITEMS, ...TRUST_ITEMS, ...TRUST_ITEMS].map((item, index) => (
-              <span key={`${item}-${index}`} className="tag-pill">
-                {item}
-              </span>
-            ))}
           </div>
         </section>
 
@@ -488,7 +476,7 @@ export default function Home() {
               <a href="sms:+12795290731" className="btn-primary final-cta-button">
                 Text Nell at (279) 529-0731
               </a>
-              <p className="text-xs text-[#6b7280]/70 mt-3 max-w-md mx-auto leading-relaxed">
+              <p className="final-consent">
                 By texting (279) 529-0731, you consent to receive recurring SMS messages from Nell. Msg & data rates may apply. Reply STOP to unsubscribe, HELP for help.
                 {" "}
                 <a href="/privacy" className="underline">Privacy</a> · <a href="/terms" className="underline">Terms</a>
