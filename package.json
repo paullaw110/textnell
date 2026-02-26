@@ -1,5 +1,10 @@
 {
   "name": "textnell",
   "private": true,
-  "workspaces": ["apps/*"]
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:server": "npm run dev -w apps/server"
+  }
 }
