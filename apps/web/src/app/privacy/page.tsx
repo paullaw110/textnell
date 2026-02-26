@@ -23,6 +23,22 @@ export default function Privacy() {
             </section>
 
             <section>
+              <h2 className="text-2xl font-display font-semibold text-[#1a1a2e] mb-4 border-b-2 border-[#ff6b4a]/20 pb-2">SMS Consent &amp; Opt-In</h2>
+              <p className="mb-4 font-body leading-relaxed">
+                By texting Nell at (279) 529-0731, you expressly consent to receive recurring automated SMS messages related to birthday reminders, relationship management, and gift suggestions. You may receive approximately 5-15 messages per month depending on your contacts and upcoming dates.
+              </p>
+              <p className="mb-4 font-body leading-relaxed">
+                You can opt out at any time by replying STOP to any message. After opting out, you will receive one final confirmation message and no further texts. To resume service, text START.
+              </p>
+              <p className="mb-4 font-body leading-relaxed">
+                For help, reply HELP or contact us at support@textnell.com.
+              </p>
+              <p className="font-body leading-relaxed">
+                Message and data rates may apply. Carriers are not liable for delayed or undelivered messages.
+              </p>
+            </section>
+
+            <section>
               <h2 className="text-2xl font-display font-semibold text-[#1a1a2e] mb-4 border-b-2 border-[#ff6b4a]/20 pb-2">How We Use Your Information</h2>
               <p className="mb-4 font-body leading-relaxed">
                 We use your information solely to provide the Nell service:
@@ -110,6 +126,9 @@ export default function Privacy() {
                 If you have any questions about this Privacy Policy or our data practices, please contact us at:
               </p>
               <div className="space-y-2 font-body">
+                <p>
+                  <strong>Support:</strong> <a href="mailto:support@textnell.com" className="text-[#ff6b4a] hover:text-[#e55a3a] transition-colors">support@textnell.com</a>
+                </p>
                 <p>
                   <strong>Email:</strong> <a href="mailto:lawrencep.design@gmail.com" className="text-[#ff6b4a] hover:text-[#e55a3a] transition-colors">lawrencep.design@gmail.com</a>
                 </p>

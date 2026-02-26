@@ -305,6 +305,11 @@ export default function Home() {
                 See how it works
               </a>
             </div>
+            <p className="text-xs text-[#6b7280]/70 mt-3 max-w-md mx-auto leading-relaxed">
+              By texting Nell, you consent to receive recurring SMS messages. Msg & data rates may apply. Text STOP to cancel, HELP for help.
+              {" "}
+              <a href="/privacy" className="underline">Privacy Policy</a> · <a href="/terms" className="underline">Terms</a>
+            </p>
             <p className="hero-proof" data-reveal>
               Early Access · SMS Native · No App Install
             </p>
@@ -470,23 +475,31 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="final-cta-section section-space">
-          <div className="final-cta-media photo-grain" style={{ backgroundImage: `url(${PHOTOS.final})` }} />
-          <div className="final-cta-overlay" />
-          <div className="container-shell final-cta-content" data-reveal>
-            <p className="section-kicker">Ready</p>
-            <h2>Build better friendship follow-through with one text.</h2>
-            <p>
-              Nell is live in early access. Start the thread and let memory run in the background.
-            </p>
-            <a href="sms:+12795290731" className="btn-primary final-cta-button">
-              Text Nell at (279) 529-0731
-            </a>
-            <span>No app install required</span>
-          </div>
-        </section>
+        <div className="footer-reveal-shell">
+          <section className="final-cta-section section-space">
+            <div className="final-cta-media photo-grain" style={{ backgroundImage: `url(${PHOTOS.final})` }} />
+            <div className="final-cta-overlay" />
+            <div className="container-shell final-cta-content" data-reveal>
+              <p className="section-kicker">Ready</p>
+              <h2>Build better friendship follow-through with one text.</h2>
+              <p>
+                Nell is live in early access. Start the thread and let memory run in the background.
+              </p>
+              <a href="sms:+12795290731" className="btn-primary final-cta-button">
+                Text Nell at (279) 529-0731
+              </a>
+              <p className="text-xs text-[#6b7280]/70 mt-3 max-w-md mx-auto leading-relaxed">
+                By texting (279) 529-0731, you consent to receive recurring SMS messages from Nell. Msg & data rates may apply. Reply STOP to unsubscribe, HELP for help.
+                {" "}
+                <a href="/privacy" className="underline">Privacy</a> · <a href="/terms" className="underline">Terms</a>
+              </p>
+              <span>No app install required</span>
+            </div>
+          </section>
+          <div className="footer-reveal-spacer" aria-hidden="true" />
+        </div>
 
-        <footer className="home-footer">
+        <footer className="home-footer footer-reveal">
           <div className="container-shell home-footer-inner">
             <div>
               <p className="brand-wordmark">nell</p>

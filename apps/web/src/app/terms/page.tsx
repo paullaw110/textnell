@@ -33,6 +33,11 @@ export default function Terms() {
                 <li><strong>Message and Data Rates:</strong> Standard message and data rates may apply. Check with your wireless carrier for details about your messaging plan.</li>
                 <li><strong>Supported Carriers:</strong> The service works with major U.S. wireless carriers. Service may not be available on all carriers.</li>
                 <li><strong>Mobile Device Requirements:</strong> You need a compatible mobile device and wireless service plan to use Nell.</li>
+                <li>Message frequency: Approximately 5-15 messages per month, varying based on your stored contacts and upcoming dates</li>
+                <li>You can opt out at any time by replying STOP</li>
+                <li>For help, text HELP or email support@textnell.com</li>
+                <li>Message and data rates may apply</li>
+                <li>Carriers are not liable for delayed or undelivered messages</li>
               </ul>
             </section>
 
